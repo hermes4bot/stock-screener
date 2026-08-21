@@ -1,0 +1,18 @@
+[project]
+name = "stock-screener"
+version = "0.1.0"
+description = "Pre-market stock gap scanner for US markets (Dow, S&P 500, NASDAQ-100, full market) using Finnhub"
+authors = [
+    { name = "Hermes Agent" }
+]
+readme = "SKILL.md"
+requires-python = ">=3.11"
+dependencies = [
+    "finnhub-python>=2.4",
+    "pandas>=2.0",
+    "requests>=2.31",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"

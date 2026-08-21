@@ -512,6 +512,44 @@ def send_telegram(message: str, bot_token: str, chat_id: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Scan history persistence
+# ---------------------------------------------------------------------------
+
+HISTORY_DIR = DATA_DIR / "history"
+
+
+def save_scan_history(all_results: dict) -> Path:
+    """Save scan results permanently, date-stamped. Multiple scans on the
+    same day merge (per group: latest scan wins). Never cleaned up.
+    """
+    HISTORY_DIR.mkdir(exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    filepath = HISTORY_DIR / f"gaps_{today}.json"
+
+    # Merge with existing file for today
+    record = {}
+    if filepath.exists():
+        try:
+            with open(filepath) as f:
+                record = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            record = {}
+
+    record.update({
+        "date": today,
+        "scanned_at": datetime.now().isoformat(timespec="seconds"),
+        "gap_threshold": GAP_THRESHOLD,
+        "groups": all_results,
+        "total_gaps": sum(len(g) for g in all_results.values()),
+    })
+
+    with open(filepath, "w") as f:
+        json.dump(record, f, indent=2)
+    log.info(f"History saved: {filepath}")
+    return filepath
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -624,6 +662,10 @@ def main():
         total += len(gaps)
     log.info(f"  TOTAL: {total} gaps")
     log.info(f"Cache: {len(cache)} quotes at {CACHE_FILE}")
+
+    # Persist scan history (--save) - permanent, date-stamped, merges per day
+    if save_results:
+        save_scan_history(all_results)
 
     # Optional: deliver summary via Telegram
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")

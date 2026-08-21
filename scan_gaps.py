@@ -42,7 +42,10 @@ import requests
 # Configuration
 # ---------------------------------------------------------------------------
 API_KEY = os.environ.get("FINNHUB_API_KEY", "")
-GAP_THRESHOLD = float(os.environ.get("GAP_THRESHOLD", "0.50"))  # 50%
+# Minimum gap to record (lowest tier). Higher tiers are classified, not filtered.
+GAP_THRESHOLD = float(os.environ.get("GAP_THRESHOLD", "0.10"))  # 10%
+# Gap tiers in percent: every detected gap gets the label of its highest tier.
+GAP_TIERS = [10.0, 20.0, 50.0]
 # Twelve Data API key for EMA/SMA candles (free tier: 800 calls/day)
 TWELVEDATA_API_KEY = os.environ.get("TWELVEDATA_API_KEY", "demo")  # demo works for testing
 
@@ -205,9 +208,18 @@ def fetch_quote(symbol: str, client: finnhub.Client) -> dict | None:
         return None
 
 
+def classify_tier(gap_pct: float) -> str:
+    """Return the highest tier label this gap reaches, e.g. '20%+'."""
+    tier = f"{GAP_TIERS[0]:.0f}%+"
+    for t in GAP_TIERS:
+        if abs(gap_pct) >= t:
+            tier = f"{t:.0f}%+"
+    return tier
+
+
 def detect_gap(symbol: str, quote: dict) -> dict | None:
     """
-    Detect pre-market gap >= GAP_THRESHOLD.
+    Detect pre-market gap >= GAP_THRESHOLD (lowest tier).
     Finnhub /quote returns:
       c  - current price (includes pre-market)
       pc - previous close
@@ -231,6 +243,7 @@ def detect_gap(symbol: str, quote: dict) -> dict | None:
         "current": round(current, 2),
         "gap_pct": round(gap_pct * 100, 2),
         "direction": direction,
+        "tier": classify_tier(gap_pct * 100),
     }
 
 
@@ -450,19 +463,20 @@ def scan_index_parallel(name: str, symbols: list[str], cache: dict) -> list[dict
 
 
 def format_results(name: str, gaps: list[dict]) -> str:
-    """Format gap results as a readable string."""
+    """Format gap results as a readable string, sorted by tier then size."""
     if not gaps:
         return f"=== {name} - No gaps >= {GAP_THRESHOLD*100:.0f}% found ===\n"
 
+    tier_order = {f"{t:.0f}%+": i for i, t in enumerate(reversed(GAP_TIERS))}
     lines = [
         f"=== {name} - {len(gaps)} stock(s) with gaps >= {GAP_THRESHOLD*100:.0f}% ===",
         "",
     ]
-    for g in sorted(gaps, key=lambda x: abs(x["gap_pct"]), reverse=True):
+    for g in sorted(gaps, key=lambda x: (tier_order.get(x.get("tier"), 0), abs(x["gap_pct"])), reverse=True):
         arrow = "🔼" if g["direction"] == "UP" else "🔽"
         lines.append(
-            f"  {arrow} {g['symbol']:10s} {g['gap_pct']:>8.2f}%  | "
-            f"${g['prev_close']:>8.2f} -> ${g['current']:>8.2f}  ({g['direction']})"
+            f"  {arrow} [{g.get('tier', '?'):>4s}] {g['symbol']:10s} {g['gap_pct']:>8.2f}%  | "
+            f"${g['prev_close']:>8.2f} -> ${g['current']:>8.2f}"
         )
         # Show indicators if available
         if g.get("indicators"):
@@ -476,6 +490,20 @@ def format_results(name: str, gaps: list[dict]) -> str:
                 f"SMA(200): {'✅ Above' if ind['above_sma200'] else '❌ Below'}"
             )
     lines.append("")
+    return "\n".join(lines)
+
+
+def format_tier_summary(all_results: dict) -> str:
+    """One-line-per-group tier breakdown for the final summary."""
+    lines = []
+    for name, gaps in all_results.items():
+        counts = {}
+        for g in gaps:
+            t = g.get("tier", "?")
+            counts[t] = counts.get(t, 0) + 1
+        parts = [f"{counts[t]}x {t}" for t in reversed([f"{x:.0f}%+" for x in GAP_TIERS]) if t in counts]
+        detail = ", ".join(parts) if parts else "none"
+        lines.append(f"  {name}: {len(gaps)} gaps ({detail})")
     return "\n".join(lines)
 
 
@@ -658,8 +686,9 @@ def main():
     log.info(f"{'=' * 60}")
     total = 0
     for name, gaps in all_results.items():
-        log.info(f"  {name}: {len(gaps)} gaps >= {GAP_THRESHOLD*100:.0f}%")
         total += len(gaps)
+    log.info(f"Tiers: >= {GAP_THRESHOLD*100:.0f}% (recorded), tiers: {', '.join(f'{t:.0f}%+' for t in GAP_TIERS)}")
+    log.info(format_tier_summary(all_results))
     log.info(f"  TOTAL: {total} gaps")
     log.info(f"Cache: {len(cache)} quotes at {CACHE_FILE}")
 
@@ -680,7 +709,7 @@ def main():
                 for g in gaps:
                     arrow = "🔼" if g["direction"] == "UP" else "🔽"
                     lines.append(
-                        f"{arrow} {g['symbol']}: {g['gap_pct']:+.2f}% "
+                        f"{arrow} [{g.get('tier', '?')}] {g['symbol']}: {g['gap_pct']:+.2f}% "
                         f"(${g['prev_close']} -> ${g['current']})"
                     )
                     if g.get("indicators"):
@@ -690,7 +719,7 @@ def main():
                             f"Price vs SMA200: {'📈 Above' if ind['above_sma200'] else '📉 Below'}"
                         )
             else:
-                lines.append(f"- {name}: no gaps >= 50%")
+                lines.append(f"- {name}: no gaps >= {GAP_THRESHOLD*100:.0f}%")
         send_telegram("\n".join(lines), bot_token, chat_id)
 
 

@@ -1,9 +1,18 @@
 {
   "date": "2026-08-22",
-  "scanned_at": "2026-08-22T01:44:22",
-  "gap_threshold": 0.5,
+  "scanned_at": "2026-08-22T01:57:54",
+  "gap_threshold": 0.1,
   "groups": {
-    "Dow Jones": []
+    "S&P 500": [
+      {
+        "symbol": "HOOD",
+        "prev_close": 95.1,
+        "current": 108.13,
+        "gap_pct": 13.7,
+        "direction": "UP",
+        "tier": "10%+"
+      }
+    ]
   },
-  "total_gaps": 0
+  "total_gaps": 1
 }

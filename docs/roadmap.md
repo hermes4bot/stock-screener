@@ -6,7 +6,8 @@ fetch → detection → persistence → report.
 
 ## Done
 
-- [x] Pre-market gap scanner (≥ 50 %) — Dow, S&P 500, NASDAQ-100
+- [x] Pre-market gap scanner with tier ladder — Dow, S&P 500, NASDAQ-100
+- [x] Gap tiers: recorded from 10 %, classified 10%+ / 20%+ / 50%+
 - [x] Full US market scan (parallel, ~5,000 symbols)
 - [x] Cache-first data layer (quotes 5 min, candles 1 h)
 - [x] Monthly ticker list updates (Wikipedia)
@@ -15,13 +16,10 @@ fetch → detection → persistence → report.
 
 ## In progress
 
-- [ ] Scan history persistence (`data/history/gaps_YYYY-MM-DD.json`)
-      — wire `--save` into the daily cron
+- [x] Scan history persistence (`data/history/gaps_YYYY-MM-DD.json`)
 
 ## Next (near term)
 
-- [ ] Lower gap threshold option (e.g. 10/20 %) — 50 % hits are rare;
-      a configurable ladder makes daily results useful
 - [ ] `gap_stats` builder: aggregate history → per-symbol gap frequency
 - [ ] European market screening (XETRA/LSE) — needs a source with EU
       pre-market quotes; candidate: Twelve Data or EODHD

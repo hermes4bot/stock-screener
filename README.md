@@ -69,6 +69,15 @@ Docs are updated with every change to the code.
 
 US market times (Berlin): pre-market 10:00–15:30, regular 15:30–22:00.
 
+## Gap tiers
+
+Gaps are recorded from **10 %** up and classified into tiers
+(`10%+`, `20%+`, `50%+`). Each result carries its highest tier; output is
+sorted by tier, then size. Configure via:
+
+- `GAP_THRESHOLD` env var — minimum recorded gap (default `0.10`)
+- `GAP_TIERS` in `scan_gaps.py` — tier boundaries `[10, 20, 50]`
+
 ## API usage
 
 - **Finnhub** (free): quotes + symbol lists — 60 calls/min

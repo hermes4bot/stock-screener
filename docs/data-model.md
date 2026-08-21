@@ -69,9 +69,14 @@ Gap entry:
   "current": 7.25,
   "gap_pct": 76.83,
   "direction": "UP",
+  "tier": "50%+",
   "indicators": null
 }
 ```
+
+`tier` is the highest boundary the |gap| reaches (from `GAP_TIERS`:
+10/20/50). The minimum recorded gap is `GAP_THRESHOLD` (default 0.10 = 10 %);
+larger tiers are labels, not filters.
 
 Retention: **forever**. This is the analysis base for future features
 (gap-frequency per stock, volatility rankings, backtests).

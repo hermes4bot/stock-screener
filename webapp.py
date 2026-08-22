@@ -144,11 +144,24 @@ PAGE = """
             gap:10px; padding:12px }
   iframe { width:100%; height:380px; border:1px solid #2a2e39; border-radius:6px;
            background:#131722 }
+  .popupHelp { background:#3d331f; border:1px solid #ff9800; color:#ffd699;
+               border-radius:8px; padding:12px 16px; margin-bottom:16px;
+               font-size:.88rem }
+  .popupHelp button { float:right; background:none; border:none;
+                      color:#ffd699; font-size:1rem; cursor:pointer }
 </style>
 </head>
 <body>
 <h1>🇺🇸 US Pre-Market Gap Screener</h1>
 <div class="meta">{{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a></div>
+
+<div class="popupHelp" id="popupHelp" style="display:none">
+  ⚠ <b><span id="blockedCount">0</span> tabs were blocked</b> by your browser.
+  Click the pop-up blocker icon in the address bar →
+  <b>“Always allow pop-ups from 10.53.164.28”</b> (Chrome: also tick
+  “allow multiple pop-ups”) → Done, then click again.
+  <button onclick="this.parentElement.style.display='none'">✕</button>
+</div>
 
 {% for r in rows %}
 {% if loop.index0 % 10 == 0 %}
@@ -202,26 +215,43 @@ function tfUrls(sym) {
 
 // Single stock: open D1+M15+M1 synchronously inside the click gesture.
 function openAll(sym) {
-  for (const u of tfUrls(sym)) window.open(u, "_blank");
+  let opened = 0;
+  for (const u of tfUrls(sym)) {
+    const w = window.open(u, "_blank");
+    if (w) opened++;
+  }
+  if (opened < 3) showBlockerHelp(3 - opened);
 }
 
 // Group opener: called directly from the group button click -> same gesture.
-// All window.open calls happen synchronously; browsers that cap the number
-// of tabs will ask the user once ("allow multiple pop-ups").
 function openGroup(startIdx, endIdx) {
-  let opened = 0;
+  let opened = 0, wanted = 0;
   for (let i = startIdx; i <= endIdx && i < allSymbols.length; i++) {
     for (const u of tfUrls(allSymbols[i])) {
-      window.open(u, "_blank");
-      opened++;
+      wanted++;
+      const w = window.open(u, "_blank");
+      if (w) opened++;
     }
   }
   // Feedback without replacing the button (so it can be clicked again)
   const btn = event.currentTarget || window.event?.target;
   if (btn) {
     const info = btn.parentElement.querySelector('.info');
-    if (info) info.textContent = `Opened ${opened} tabs (stocks ${startIdx + 1}–${endIdx + 1}). Blocked? Allow pop-ups & retry.`;
+    if (opened === wanted) {
+      info.textContent = `✅ Opened ${opened} tabs (stocks ${startIdx + 1}–${endIdx + 1}).`;
+      info.style.color = '#26a69a';
+    } else {
+      info.textContent = `⚠ Only ${opened} of ${wanted} tabs opened.`;
+      info.style.color = '#ef5350';
+      showBlockerHelp(wanted - opened);
+    }
   }
+}
+
+function showBlockerHelp(blocked) {
+  const bar = document.getElementById('popupHelp');
+  document.getElementById('blockedCount').textContent = blocked;
+  bar.style.display = 'block';
 }
 </script>
 </body>

@@ -1,93 +1,89 @@
 # Stock Screener
 
-Pre-market gap scanner for US stock markets — built to grow into a multi-purpose
-market screening platform.
+US pre-market gap screener + market news bot — built to grow into a
+multi-purpose market screening platform.
 
-## What it does
+Repo: <https://github.com/hermes4bot/stock-screener>
 
-Detects **pre-market gaps ≥ 50%** in US stocks. A "gap" is the difference between
-a stock's current (pre-market) price and its previous close:
+## Components
 
-```
-gap % = (current price − previous close) / previous close × 100
-```
+| File | What it does |
+|---|---|
+| `tv_gaps.py` | **Primary gap screener** — one TradingView scanner API call returns ALL US stocks with pre-market gaps (gap %, PM volume, market cap, sector). Quality filter drops illiquid names. |
+| `scan_gaps.py` | Fallback gap screener via Finnhub per-symbol quotes (~5,000 symbols, parallel mode). Independent of TV's undocumented endpoint. |
+| `webapp.py` | Web frontend: big D1+M15 charts side by side, M1 on demand, favorites, batch TradingView tab openers. |
+| `news_bot.py` | Market news digest from Google News RSS (no API key), delivered via Telegram. |
+| `update_lists.py` | Monthly refresh of Dow/S&P 500 constituents from Wikipedia. |
 
-Scans:
-- **Dow Jones** (30 stocks)
-- **S&P 500** (505 stocks)
-- **NASDAQ-100** (298 stocks)
-- **Full US market** (~5,000 stocks, parallel mode)
-
-# Quick start
+## Quick start
 
 ```bash
-# Setup
 uv venv
-uv pip install finnhub-python pandas requests
-cp .env.example .env        # add your FINNHUB_API_KEY
+uv pip install finnhub-python pandas requests flask
+cp .env.example .env        # FINNHUB_API_KEY required; TELEGRAM_* optional
 
-# Fast gap scan (TradingView API, all US stocks in 1 request, ~1 s)
+# Gap scan (all US stocks in 1 request, ~1 s)
 .venv/bin/python tv_gaps.py 10 --save
 
-# Web frontend (shows latest gaps + TradingView chart links with EMA9/SMA20)
-./run_webapp.sh 8080        # open http://<host>:8080
+# Web frontend
+./run_webapp.sh 8080        # http://<host>:8080
 
-# Finnhub-based scans (slower, per-symbol)
-.venv/bin/python scan_gaps.py all        # major indices (~16 min)
-.venv/bin/python scan_gaps.py full --save  # whole US market (~95 min)
+# News digest
+.venv/bin/python news_bot.py 15
 
-# Update ticker lists (first trading day of month)
-.venv/bin/python update_lists.py
+# Finnhub fallback scans
+.venv/bin/python scan_gaps.py all        # major indices
+.venv/bin/python scan_gaps.py full       # whole US market (~95 min)
 ```
 
-## Data continuity
+## Gap tiers
 
-**Everything downloaded is saved in `data/` and reused.** Nothing is fetched
-twice while a cached copy is still fresh:
-
-| File | TTL | Content |
-|---|---|---|
-| `data/quotes_cache.json` | 5 min | Real-time quotes (Finnhub) |
-| `data/candles_cache.json` | 1 h | Daily closes for EMA/SMA (Twelve Data) |
-| `data/all_us_stocks.txt` | monthly | Full US symbol universe |
-| `data/history/gaps_YYYY-MM-DD.json` | permanent | Every scan result, date-stamped |
-
-Scan history accumulates forever and is the base for future analysis
-(gap frequency per stock, volatility rankings, backtesting).
-
-## Documentation
-
-Living docs are in [`docs/`](docs/):
-
-- [Architecture](docs/architecture.md) — components and data flow
-- [Data model](docs/data-model.md) — files, formats, retention
-- [Roadmap](docs/roadmap.md) — planned screeners and features
-
-Docs are updated with every change to the code.
+Gaps are recorded from **10 %** up and classified into tiers (`10%+`,
+`20%+`, `50%+`). Output is sorted by tier, then size.
+Config: `GAP_THRESHOLD` env var; tier list in the scripts.
 
 ## Scheduling (Hermes cron)
 
 | Job | Schedule (Berlin) | Purpose |
 |---|---|---|
-| `stock-gap-screener` | 10:15 Mon–Fri | Daily gap scan (indices), Telegram alert |
-| `monthly-full-market-scan` | 10:15, 1st–7th | Full market scan, results saved |
-| `update-ticker-lists` | 10:15, 1st–7th | Refresh index constituents |
+| `stock-gap-screener` | 10:15 Mon–Fri | Daily gap scan → Telegram |
+| `monthly-full-market-scan` | 10:15, day 1–7 | Full market scan, saved |
+| `update-ticker-lists` | 10:15, day 1–7 | Refresh index constituents |
+| `market-news-bot` | 12:40 daily | News digest → Telegram |
 
-US market times (Berlin): pre-market 10:00–15:30, regular 15:30–22:00.
+US market times in Berlin: pre-market 10:00–15:30, regular 15:30–22:00.
 
-## Gap tiers
+## Data continuity
 
-Gaps are recorded from **10 %** up and classified into tiers
-(`10%+`, `20%+`, `50%+`). Each result carries its highest tier; output is
-sorted by tier, then size. Configure via:
+Everything downloaded is stored under `data/` and reused:
 
-- `GAP_THRESHOLD` env var — minimum recorded gap (default `0.10`)
-- `GAP_TIERS` in `scan_gaps.py` — tier boundaries `[10, 20, 50]`
+| Path | TTL / retention | Content |
+|---|---|---|
+| `quotes_cache.json` | 5 min | Finnhub quotes |
+| `candles_cache.json` | 1 h | Daily closes (Twelve Data) |
+| `history/tv_gaps_*.json`, `gaps_*.json`, `news_*.json` | permanent | Date-stamped results (in git) |
+| `dow_jones.txt` etc. | monthly | Ticker lists (in git) |
 
-## API usage
+History accumulates forever — base for future gap-frequency stats and backtests.
 
-- **Finnhub** (free): quotes + symbol lists — 60 calls/min
-- **Twelve Data** (free, optional): daily candles for indicators — 800 calls/day
+## Web frontend features
 
-The scanner never exceeds rate limits: cache-first reads, sliding-window
-limiter at ~57 calls/min, automatic 62 s pause on HTTP 429.
+- D1 chart at 2/3 width + M15 at 1/3; M1 full-width behind a toggle (lazy-loaded)
+- **EMA(9) orange, SMA(20) blue** on every chart and every TradingView link
+- Chart links open your TV layout with preloaded studies and lookback ranges
+  (D1 = 90 d, M15 = 10 d, M1 = 2 d)
+- Favorites: star per stock (localStorage), "Favorites only" filter;
+  batch bar ("open next 10" / "open ALL") appears only in Favorites view
+- Pop-up blocker detection with fix instructions
+
+## Documentation
+
+Living docs in [`docs/`](docs/): [Architecture](docs/architecture.md),
+[Data model](docs/data-model.md), [Roadmap](docs/roadmap.md).
+
+## APIs
+
+- **TradingView scanner** (undocumented, free) — primary gap data
+- **Finnhub** (free: 60 calls/min) — fallback quotes; candles are premium
+- **Twelve Data** (free: 800/day) — optional candle history for indicators
+- **Google News RSS** (free) — news digest

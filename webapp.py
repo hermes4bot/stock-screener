@@ -318,15 +318,18 @@ function tvWidget(symbol, interval, containerId) {
     hide_side_toolbar: true,
     allow_symbol_change: false,
     save_image: false,
-    // EMA(9) orange + SMA(20) blue. Plain string IDs + studies_overrides:
-    // object keys like "styles"/"overlaid" are NOT supported in the widget
-    // constructor and make studies fail silently.
-    studies: ["MAExp@tv-basicstudies", "MASimple@tv-basicstudies"],
+    // EMA(9) orange + SMA(20) blue.
+    // Per TV docs: overrides use the indicator DISPLAY name ("moving average"),
+    // indexed _1/_2 for the second instance. Lengths come via inputs.
+    studies: [
+      { id: "MAExp@tv-basicstudies", inputs: { length: 9 } },
+      { id: "MASimple@tv-basicstudies", inputs: { length: 20 } },
+    ],
     studies_overrides: {
-      "maexp.length": 9,
-      "maexp.plot.color": "#ff9800",
-      "masimple.length": 20,
-      "masimple.plot.color": "#2962ff",
+      "moving average.ma.color": "#ff9800",
+      "moving average.ma.linewidth": 2,
+      "moving average_1.ma.color": "#2962ff",
+      "moving average_1.ma.linewidth": 2,
     },
     time_frames: [],
     from: Math.floor(Date.now() / 1000) - (LOOKBACK[interval] || 90) * 86400,

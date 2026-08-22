@@ -24,10 +24,13 @@ HISTORY_DIR = DATA_DIR / "history"
 app = Flask(__name__)
 
 TV_CHART_BASE = "https://www.tradingview.com/chart/0ZTktGqI/"
+# Chart-page links: studies as [[name, {inputs}], ...]
 STUDIES = (
     "%5B%5B%22EMA%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
     "%2C%5B%22SMA%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
 )
+# Widget embeds: studies as [{"id": name, "inputs": {...}}, ...]
+WIDGET_STUDIES = "%5B%7B%22id%22%3A%22EMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A9%7D%7D%2C%7B%22id%22%3A%22SMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A20%7D%7D%5D"
 INTERVALS = [("D", "D1"), ("15", "M15"), ("1", "M1")]
 # Visible history per interval: interval -> lookback in days
 LOOKBACK_DAYS = {"D": 90, "15": 10, "1": 2}
@@ -80,6 +83,8 @@ def chart_url(symbol: str, interval: str) -> str:
 
 
 def widget_url(symbol: str, interval: str, w=640, h=360) -> str:
+    # Kept for reference; embedded charts now use the official
+    # TradingView.widget API (see WIDGET_TEMPLATE) so studies render.
     return (
         f"https://s.tradingview.com/widgetembed/?symbol={quote(symbol)}"
         f"&interval={interval}&hidesidetoolbar=1&saveimage=0&theme=dark&style=1"
@@ -141,8 +146,9 @@ PAGE = """
   .openall:hover { background:#363c4a }
 
   .charts { display:grid; grid-template-columns:2fr 1fr; gap:10px; padding:12px }
-  .charts iframe { width:100%; height:420px; border:1px solid #2a2e39;
-                   border-radius:6px; background:#131722 }
+  .charts > div, .m1box > div { height:420px; border:1px solid #2a2e39;
+                                border-radius:6px; background:#131722 }
+  .charts iframe, .m1box iframe { border:none; border-radius:6px }
   .m1wrap { padding:0 12px 12px }
   .m1btn { background:#2a2e39; color:var(--text); border:none;
            padding:8px 16px; border-radius:6px; cursor:pointer;
@@ -155,11 +161,20 @@ PAGE = """
                font-size:.88rem }
   .popupHelp button { float:right; background:none; border:none;
                       color:#ffd699; font-size:1rem; cursor:pointer }
+  .favbtn { background:none; border:none; color:#787b86; font-size:1.25rem;
+            cursor:pointer; padding:0 2px; line-height:1 }
+  .favbtn:hover { color:#fdd835 }
+  .favbtn.fav-on { color:#fdd835 }
+  a.fav-active { color:#fdd835 !important }
 </style>
 </head>
 <body>
 <h1>🇺🇸 US Pre-Market Gap Screener</h1>
-<div class="meta">{{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a></div>
+<div class="meta">
+  {{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a> ·
+  <a href="#" id="favToggle" data-on="0"
+     onclick="const t=this;t.dataset.on=t.dataset.on==='1'?'0':'1';applyFavFilter();return false;">★ Favorites only</a>
+</div>
 
 <div class="popupHelp" id="popupHelp" style="display:none">
   ⚠ <b><span id="blockedCount">0</span> tabs were blocked</b> by your browser.
@@ -180,6 +195,8 @@ PAGE = """
 {% endif %}
 <div class="stock" data-symbol="{{ r.symbol }}">
   <div class="head">
+    <button class="favbtn" id="fav-{{ r.symbol }}" onclick="toggleFav('{{ r.symbol }}', this)"
+            title="Add to favorites">☆</button>
     <span class="sym"><a href="{{ r.tv_d }}" target="_blank"
         onclick="openAll('{{ r.symbol }}'); return false;"
         title="Open D1+M15+M1 in TradingView">{{ r.symbol }}</a></span>
@@ -197,13 +214,13 @@ PAGE = """
   </div>
 
   <div class="charts">
-    <iframe class="chart-d1" loading="lazy" src="{{ r.mini_d }}"></iframe>
-    <iframe class="chart-m15" loading="lazy" src="{{ r.mini_15 }}"></iframe>
+    <div class="chart-d1" id="chart-{{ r.symbol }}-D"></div>
+    <div class="chart-m15" id="chart-{{ r.symbol }}-15"></div>
   </div>
   <div class="m1wrap">
-    <button class="m1btn" onclick="toggleM1(this)">▼ Show M1 chart (full width)</button>
+    <button class="m1btn" onclick="toggleM1(this, '{{ r.symbol }}')">▼ Show M1 chart (full width)</button>
     <div class="m1box" style="display:none">
-      <iframe loading="lazy" data-src="{{ r.mini_1 }}"></iframe>
+      <div id="chart-{{ r.symbol }}-1"></div>
     </div>
   </div>
 </div>
@@ -265,12 +282,49 @@ function showBlockerHelp(blocked) {
   bar.style.display = 'block';
 }
 
+// ---- Embedded charts via official TradingView widget API -----------------
+// Studies with inputs render reliably only through TradingView.widget.
+const LOOKBACK = { D: 90, "15": 10, "1": 2 };
+
+function tvWidget(symbol, interval, containerId) {
+  new TradingView.widget({
+    container_id: containerId,
+    symbol: symbol,   // plain ticker - TV resolves the exchange automatically
+    interval: interval,
+    timezone: "Etc/UTC",
+    theme: "dark",
+    style: "1",
+    autosize: true,
+    hide_side_toolbar: true,
+    allow_symbol_change: false,
+    save_image: false,
+    // EMA(9) + SMA(20) on every embedded chart
+    studies: [
+      { id: "EMA@tv-basicstudies", inputs: { length: 9 } },
+      { id: "SMA@tv-basicstudies", inputs: { length: 20 } },
+    ],
+    time_frames: [],
+    from: Math.floor(Date.now() / 1000) - (LOOKBACK[interval] || 90) * 86400,
+  });
+}
+
+// Build all visible charts (D1 + M15). M1 is built lazily.
+function initCharts() {
+  document.querySelectorAll('.chart-d1, .chart-m15').forEach(el => {
+    const sym = el.id.split('-')[1];          // chart-<SYM>-<IV>
+    const iv = el.id.split('-')[2] === 'D' ? 'D' : el.id.split('-')[2];
+    if (!el.dataset.built) { tvWidget(sym, iv, el.id); el.dataset.built = '1'; }
+  });
+}
+
+const m1Built = {};
+
 // M1 chart: lazy-load on first expand, then toggle visibility.
-function toggleM1(btn) {
+function toggleM1(btn, sym) {
   const box = btn.parentElement.querySelector('.m1box');
-  const frame = box.querySelector('iframe');
+  const holder = box.querySelector('div[id^="chart-"]');
   if (box.style.display === 'none') {
-    if (!frame.src && frame.dataset.src) frame.src = frame.dataset.src;
+    if (!m1Built[sym]) { tvWidget(sym, '1', holder.id); m1Built[sym] = true; }
     box.style.display = 'block';
     btn.textContent = '▲ Hide M1 chart';
   } else {
@@ -278,6 +332,48 @@ function toggleM1(btn) {
     btn.textContent = '▼ Show M1 chart (full width)';
   }
 }
+</script>
+<script>
+// ---- Favorites (persisted in localStorage) -------------------------------
+// Defined early so inline onclick handlers can call it.
+function getFavs() {
+  try { return JSON.parse(localStorage.getItem('gapFavs') || '[]'); } catch { return []; }
+}
+function saveFavs(f) { localStorage.setItem('gapFavs', JSON.stringify(f)); }
+
+function toggleFav(sym, btn) {
+  let f = getFavs();
+  if (f.includes(sym)) { f = f.filter(s => s !== sym); } else { f.push(sym); }
+  saveFavs(f);
+  btn.textContent = f.includes(sym) ? '★' : '☆';
+  btn.classList.toggle('fav-on', f.includes(sym));
+  applyFavFilter();
+}
+
+function applyFavFilter() {
+  const only = document.getElementById('favToggle').dataset.on === '1';
+  const favs = getFavs();
+  document.querySelectorAll('.stock').forEach(el => {
+    const sym = el.dataset.symbol;
+    el.style.display = (!only || favs.includes(sym)) ? '' : 'none';
+  });
+  const shown = document.querySelectorAll('.stock:not([style*="none"])').length;
+  const t = document.getElementById('favToggle');
+  t.textContent = only ? `★ Favorites (${favs.length}) — showing` : `★ Favorites only`;
+  t.classList.toggle('fav-active', only);
+}
+</script>
+<script src="https://s3.tradingview.com/tv.js" onload="window.initCharts && window.initCharts()"></script>
+<script>
+// Mark saved favorites on page load
+window.addEventListener('DOMContentLoaded', () => {
+  const favs = getFavs();
+  favs.forEach(sym => {
+    const b = document.getElementById('fav-' + sym);
+    if (b) { b.textContent = '★'; b.classList.add('fav-on'); }
+  });
+});
+window.addEventListener('load', () => window.initCharts && window.initCharts());
 </script>
 </body>
 </html>

@@ -139,16 +139,19 @@ PAGE = """
 <h1>🇺🇸 US Pre-Market Gap Screener</h1>
 <div class="meta">{{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a></div>
 
-<div class="batch" id="batchBar">
-  <button id="btnOpen10">▶ Open next 10 stocks (D1+M15+M1)</button>
-  <button id="btnReset">↺ Reset</button>
-  <span class="info" id="batchInfo">Opens 30 TradingView tabs per click — allow pop-ups!</span>
-</div>
-
 {% for r in rows %}
+{% if loop.index0 % 10 == 0 %}
+{% set group_end = [loop.index0 + 9, rows|length - 1]|min %}
+<div class="batch">
+  <button class="groupBtn" onclick="openGroup({{ loop.index0 }}, {{ group_end }})">▶
+    Open stocks {{ loop.index0 + 1 }}–{{ group_end + 1 }} (D1+M15+M1)</button>
+  <span class="info">{{ group_end - loop.index0 + 1 }} stocks · {{ (group_end - loop.index0 + 1) * 3 }} tabs — allow pop-ups for this site!</span>
+</div>
+{% endif %}
 <div class="stock" data-symbol="{{ r.symbol }}">
   <div class="head">
-    <span class="sym"><a href="#" onclick="openAll('{{ r.symbol }}');return false;"
+    <span class="sym"><a href="{{ r.tv_d }}" target="_blank"
+        onclick="openAll('{{ r.symbol }}'); return false;"
         title="Open D1+M15+M1 in TradingView">{{ r.symbol }}</a></span>
     <span class="name">{{ r.description or '' }}</span>
     <span class="tier t{{ r.tier_num }}">{{ r.tier }}</span>
@@ -172,40 +175,39 @@ PAGE = """
 {% endfor %}
 
 <script>
-// ---- Batch opener: 10 stocks per click, each D1+M15+M1 -------------------
-let batchIndex = 0;
-const symbols = JSON.parse('{{ symbols_json|safe }}');
+// ---- Group openers: each group of 10 stocks has its own button -----------
+const allSymbols = JSON.parse('{{ symbols_json|safe }}');
 
 function tfUrls(sym) {
   const base = "https://www.tradingview.com/chart/0ZTktGqI/";
   const studies = "{{ studies|safe }}";
-  return [["D","D"],["15","M15"],["1","M1"]].map(([iv]) =>
+  return ["D", "15", "1"].map(iv =>
       base + "?symbol=" + encodeURIComponent(sym) + "&interval=" + iv + "&studies=" + studies);
 }
 
+// Single stock: open D1+M15+M1 synchronously inside the click gesture.
 function openAll(sym) {
   for (const u of tfUrls(sym)) window.open(u, "_blank");
 }
 
-document.getElementById('btnOpen10').addEventListener('click', function() {
-  const start = batchIndex;
-  if (start >= symbols.length) { this.disabled = true; return; }
-  // Browsers block large synchronous pop-up bursts; chain them with small delays.
-  const urls = [];
-  for (let i = start; i < Math.min(start + 10, symbols.length); i++) {
-    urls.push(...tfUrls(symbols[i]));
+// Group opener: called directly from the group button click -> same gesture.
+// All window.open calls happen synchronously; browsers that cap the number
+// of tabs will ask the user once ("allow multiple pop-ups").
+function openGroup(startIdx, endIdx) {
+  let opened = 0;
+  for (let i = startIdx; i <= endIdx && i < allSymbols.length; i++) {
+    for (const u of tfUrls(allSymbols[i])) {
+      window.open(u, "_blank");
+      opened++;
+    }
   }
-  urls.forEach((u, i) => setTimeout(() => window.open(u, "_blank"), i * 250));
-  batchIndex = Math.min(start + 10, symbols.length);
-  document.getElementById('batchInfo').textContent =
-      `Opened stocks ${start + 1}–${batchIndex} of ${symbols.length} (${urls.length} tabs)`;
-});
-
-document.getElementById('btnReset').addEventListener('click', () => {
-  batchIndex = 0;
-  document.getElementById('batchInfo').textContent =
-      'Reset. Opens 30 TradingView tabs per click — allow pop-ups!';
-});
+  // Feedback without replacing the button (so it can be clicked again)
+  const btn = event.currentTarget || window.event?.target;
+  if (btn) {
+    const info = btn.parentElement.querySelector('.info');
+    if (info) info.textContent = `Opened ${opened} tabs (stocks ${startIdx + 1}–${endIdx + 1}). Blocked? Allow pop-ups & retry.`;
+  }
+}
 </script>
 </body>
 </html>

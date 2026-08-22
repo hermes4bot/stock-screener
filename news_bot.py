@@ -33,6 +33,14 @@ NEWS_QUERY = os.environ.get(
     "NEWS_QUERY", "stock market OR finance OR earnings"
 )
 
+# Dedicated Telegram bot for news delivery (falls back to the main bot).
+# Set NEWS_TELEGRAM_BOT_TOKEN / NEWS_TELEGRAM_CHAT_ID in .env to split
+# news traffic onto its own bot+group, away from the programming chat.
+TELEGRAM_TOKEN = os.environ.get("NEWS_TELEGRAM_BOT_TOKEN",
+                                os.environ.get("TELEGRAM_BOT_TOKEN", ""))
+TELEGRAM_CHAT = os.environ.get("NEWS_TELEGRAM_CHAT_ID",
+                               os.environ.get("TELEGRAM_CHAT_ID", ""))
+
 DATA_DIR = Path(__file__).parent / "data"
 HISTORY_DIR = DATA_DIR / "history"
 
@@ -146,16 +154,14 @@ def save_history(articles: list[dict]) -> None:
 
 
 def send_telegram(text: str) -> bool:
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if not token or not chat_id:
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT:
         print(text)
         return False
     ok = True
     for i in range(0, len(text), 4000):  # Telegram limit: 4096 chars
         resp = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": text[i:i + 4000]},
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json={"chat_id": TELEGRAM_CHAT, "text": text[i:i + 4000]},
             timeout=30,
         )
         if resp.status_code != 200:

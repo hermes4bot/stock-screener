@@ -29,6 +29,13 @@ STUDIES = (
     "%2C%5B%22SMA%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
 )
 INTERVALS = [("D", "D1"), ("15", "M15"), ("1", "M1")]
+# Visible history per interval: interval -> lookback in days
+LOOKBACK_DAYS = {"D": 90, "15": 10, "1": 2}
+
+
+def _from_ts(interval: str) -> int:
+    import time
+    return int(time.time()) - LOOKBACK_DAYS.get(interval, 90) * 86400
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +73,10 @@ def flatten(record: dict) -> list[dict]:
 
 
 def chart_url(symbol: str, interval: str) -> str:
-    return f"{TV_CHART_BASE}?symbol={quote(symbol)}&interval={interval}&studies={STUDIES}"
+    return (
+        f"{TV_CHART_BASE}?symbol={quote(symbol)}&interval={interval}&studies={STUDIES}"
+        f"&from={_from_ts(interval)}"
+    )
 
 
 def widget_url(symbol: str, interval: str, w=640, h=360) -> str:
@@ -74,6 +84,7 @@ def widget_url(symbol: str, interval: str, w=640, h=360) -> str:
         f"https://s.tradingview.com/widgetembed/?symbol={quote(symbol)}"
         f"&interval={interval}&hidesidetoolbar=1&saveimage=0&theme=dark&style=1"
         f"&studies={STUDIES}&hideideas=1&withdateranges=0&timezone=Etc/UTC"
+        f"&from={_from_ts(interval)}&to={int(__import__('time').time()) + 3600}"
         f"&width={w}&height={h}"
     )
 
@@ -181,8 +192,12 @@ const allSymbols = JSON.parse('{{ symbols_json|safe }}');
 function tfUrls(sym) {
   const base = "https://www.tradingview.com/chart/0ZTktGqI/";
   const studies = "{{ studies|safe }}";
-  return ["D", "15", "1"].map(iv =>
-      base + "?symbol=" + encodeURIComponent(sym) + "&interval=" + iv + "&studies=" + studies);
+  const now = Math.floor(Date.now() / 1000);
+  const day = 86400;
+  // interval -> lookback days: D1 = 90d, M15 = 10d, M1 = 2d
+  return [["D", 90], ["15", 10], ["1", 2]].map(([iv, lookback]) =>
+      base + "?symbol=" + encodeURIComponent(sym) + "&interval=" + iv
+      + "&studies=" + studies + "&from=" + (now - lookback * day));
 }
 
 // Single stock: open D1+M15+M1 synchronously inside the click gesture.

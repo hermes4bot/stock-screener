@@ -140,10 +140,16 @@ PAGE = """
              font-size:.8rem; font-weight:600 }
   .openall:hover { background:#363c4a }
 
-  .charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr));
-            gap:10px; padding:12px }
-  iframe { width:100%; height:380px; border:1px solid #2a2e39; border-radius:6px;
-           background:#131722 }
+  .charts { display:grid; grid-template-columns:2fr 1fr; gap:10px; padding:12px }
+  .charts iframe { width:100%; height:420px; border:1px solid #2a2e39;
+                   border-radius:6px; background:#131722 }
+  .m1wrap { padding:0 12px 12px }
+  .m1btn { background:#2a2e39; color:var(--text); border:none;
+           padding:8px 16px; border-radius:6px; cursor:pointer;
+           font-size:.85rem; font-weight:600 }
+  .m1btn:hover { background:#363c4a }
+  .m1box iframe { width:100%; height:460px; margin-top:10px;
+                  border:1px solid #2a2e39; border-radius:6px; background:#131722 }
   .popupHelp { background:#3d331f; border:1px solid #ff9800; color:#ffd699;
                border-radius:8px; padding:12px 16px; margin-bottom:16px;
                font-size:.88rem }
@@ -191,9 +197,14 @@ PAGE = """
   </div>
 
   <div class="charts">
-    <iframe loading="lazy" src="{{ r.mini_d }}"></iframe>
-    <iframe loading="lazy" src="{{ r.mini_15 }}"></iframe>
-    <iframe loading="lazy" src="{{ r.mini_1 }}"></iframe>
+    <iframe class="chart-d1" loading="lazy" src="{{ r.mini_d }}"></iframe>
+    <iframe class="chart-m15" loading="lazy" src="{{ r.mini_15 }}"></iframe>
+  </div>
+  <div class="m1wrap">
+    <button class="m1btn" onclick="toggleM1(this)">▼ Show M1 chart (full width)</button>
+    <div class="m1box" style="display:none">
+      <iframe loading="lazy" data-src="{{ r.mini_1 }}"></iframe>
+    </div>
   </div>
 </div>
 {% endfor %}
@@ -252,6 +263,20 @@ function showBlockerHelp(blocked) {
   const bar = document.getElementById('popupHelp');
   document.getElementById('blockedCount').textContent = blocked;
   bar.style.display = 'block';
+}
+
+// M1 chart: lazy-load on first expand, then toggle visibility.
+function toggleM1(btn) {
+  const box = btn.parentElement.querySelector('.m1box');
+  const frame = box.querySelector('iframe');
+  if (box.style.display === 'none') {
+    if (!frame.src && frame.dataset.src) frame.src = frame.dataset.src;
+    box.style.display = 'block';
+    btn.textContent = '▲ Hide M1 chart';
+  } else {
+    box.style.display = 'none';
+    btn.textContent = '▼ Show M1 chart (full width)';
+  }
 }
 </script>
 </body>

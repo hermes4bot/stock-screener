@@ -26,8 +26,8 @@ app = Flask(__name__)
 TV_CHART_BASE = "https://www.tradingview.com/chart/0ZTktGqI/"
 # Chart-page links: studies as [[name, {inputs}], ...]
 STUDIES = (
-    "%5B%5B%22EMA%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
-    "%2C%5B%22SMA%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
+    "%5B%5B%22MAExp%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
+    "%2C%5B%22MASimple%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
 )
 # Widget embeds: studies as [{"id": name, "inputs": {...}}, ...]
 WIDGET_STUDIES = "%5B%7B%22id%22%3A%22EMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A9%7D%7D%2C%7B%22id%22%3A%22SMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A20%7D%7D%5D"
@@ -185,14 +185,6 @@ PAGE = """
 </div>
 
 {% for r in rows %}
-{% if loop.index0 % 10 == 0 %}
-{% set group_end = [loop.index0 + 9, rows|length - 1]|min %}
-<div class="batch">
-  <button class="groupBtn" onclick="openGroup({{ loop.index0 }}, {{ group_end }})">▶
-    Open stocks {{ loop.index0 + 1 }}–{{ group_end + 1 }} (D1+M15+M1)</button>
-  <span class="info">{{ group_end - loop.index0 + 1 }} stocks · {{ (group_end - loop.index0 + 1) * 3 }} tabs — allow pop-ups for this site!</span>
-</div>
-{% endif %}
 <div class="stock" data-symbol="{{ r.symbol }}">
   <div class="head">
     <button class="favbtn" id="fav-{{ r.symbol }}" onclick="toggleFav('{{ r.symbol }}', this)"
@@ -251,31 +243,6 @@ function openAll(sym) {
   if (opened < 3) showBlockerHelp(3 - opened);
 }
 
-// Group opener: called directly from the group button click -> same gesture.
-function openGroup(startIdx, endIdx) {
-  let opened = 0, wanted = 0;
-  for (let i = startIdx; i <= endIdx && i < allSymbols.length; i++) {
-    for (const u of tfUrls(allSymbols[i])) {
-      wanted++;
-      const w = window.open(u, "_blank");
-      if (w) opened++;
-    }
-  }
-  // Feedback without replacing the button (so it can be clicked again)
-  const btn = event.currentTarget || window.event?.target;
-  if (btn) {
-    const info = btn.parentElement.querySelector('.info');
-    if (opened === wanted) {
-      info.textContent = `✅ Opened ${opened} tabs (stocks ${startIdx + 1}–${endIdx + 1}).`;
-      info.style.color = '#26a69a';
-    } else {
-      info.textContent = `⚠ Only ${opened} of ${wanted} tabs opened.`;
-      info.style.color = '#ef5350';
-      showBlockerHelp(wanted - opened);
-    }
-  }
-}
-
 function showBlockerHelp(blocked) {
   const bar = document.getElementById('popupHelp');
   document.getElementById('blockedCount').textContent = blocked;
@@ -299,9 +266,10 @@ function tvWidget(symbol, interval, containerId) {
     allow_symbol_change: false,
     save_image: false,
     // EMA(9) + SMA(20) on every embedded chart
+    // Correct built-in IDs: MAExp = exponential MA, MASimple = simple MA
     studies: [
-      { id: "EMA@tv-basicstudies", inputs: { length: 9 } },
-      { id: "SMA@tv-basicstudies", inputs: { length: 20 } },
+      { id: "MAExp@tv-basicstudies", inputs: { length: 9 } },
+      { id: "MASimple@tv-basicstudies", inputs: { length: 20 } },
     ],
     time_frames: [],
     from: Math.floor(Date.now() / 1000) - (LOOKBACK[interval] || 90) * 86400,

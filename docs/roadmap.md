@@ -20,6 +20,8 @@ fetch → detection → persistence → report.
 
 ## Next (near term)
 
+- [x] TradingView scanner integration (`tv_gaps.py`) — all US pre-market
+      gaps in ONE request, with volume + market cap quality filters
 - [ ] `gap_stats` builder: aggregate history → per-symbol gap frequency
 - [ ] European market screening (XETRA/LSE) — needs a source with EU
       pre-market quotes; candidate: Twelve Data or EODHD

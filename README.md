@@ -18,7 +18,7 @@ Scans:
 - **NASDAQ-100** (298 stocks)
 - **Full US market** (~5,000 stocks, parallel mode)
 
-## Quick start
+# Quick start
 
 ```bash
 # Setup
@@ -26,7 +26,10 @@ uv venv
 uv pip install finnhub-python pandas requests
 cp .env.example .env        # add your FINNHUB_API_KEY
 
-# Scan
+# Fast gap scan (TradingView API, all US stocks in 1 request, ~1 s)
+.venv/bin/python tv_gaps.py 10 --save
+
+# Finnhub-based scans (slower, per-symbol)
 .venv/bin/python scan_gaps.py all        # major indices (~16 min)
 .venv/bin/python scan_gaps.py full --save  # whole US market (~95 min)
 

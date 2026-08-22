@@ -1,0 +1,71 @@
+{
+  "date": "2026-08-22",
+  "fetched_at": "2026-08-22T10:33:46+00:00",
+  "feeds": [
+    "Google News: Markets",
+    "Google News: Business"
+  ],
+  "count": 10,
+  "articles": [
+    {
+      "headline": "The US-Mexico cattle border is reopening. Not every American rancher is celebrating - CNN",
+      "source": "CNN",
+      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPRkhjUndlXzZVbzkzbmZLZnhaU3Y3ald6Wl9sRi0xbWxnajRhYlUzUVJobDg4ZUxNemJ5S0RZNWk5aHpOTnBrLUkzR3lDdnpUUmdBbF9lMW9CVmZvcGZGRl9RU1BOV2poSnV1VEhwdURYdm9pZTh2bjZrbi1hOVlmQ2lfS2h3TVJtR05mMg?oc=5",
+      "datetime": 1787392830
+    },
+    {
+      "headline": "It\u2019s never been easier to grow your wealth using the stock market - The Telegraph",
+      "source": "The Telegraph",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQdkNDUVA0QWYwRmhLOGhheERnVUk3MnM5aklmOWhtak9zMDlxUGhaUjRxTS1nRG5sb1EwUkZsNVlOd2sxOE8zZ3dOYTVNelFOLVhKZzhoUmwwclMxeDRqbHhJeEpEbUNrb05JaXdsc1RfdmRnT0k0bG10bXpMTXNUUEhmWEhQM2ptX3NQUmN5RVBybmpJVmJGWXB0X1JOM0xfRUppWVdXdzR4bEdKWGdFQnBB?oc=5",
+      "datetime": 1787392800
+    },
+    {
+      "headline": "If a Stock Market Crash Is Coming, Warren Buffett's Playbook Says Do This 1 Thing Right Now - The Motley Fool",
+      "source": "The Motley Fool",
+      "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxOREptSTM2S0kyQ1JZcl9qVnVsOFNkaWdEOUI5ejc4VENERk9mNUVpMU0tenU3MU5LU1c3TTJkZWdUUHhVSTFmb1NBSVcxNWg4NTlaZFJNTXJST3phcWtma00tRWNfSXVTR19CckNHUmF6S1RabW80R1QxWTZIZVZHUXV0RmM2dmtTZzZyV2luamZPOFEtVWpUaWhNMEpUbGs2NTFnN2kzTlV2ZG5KT195YmYyQ3Uyb3hCM3p2bU83SFJzRFBMcVppU1A2U2duQQ?oc=5",
+      "datetime": 1787392687
+    },
+    {
+      "headline": "If a Stock Market Crash Is Coming, Warren Buffett's Playbook Says Do This 1 Thing Right Now - Yahoo Finance",
+      "source": "Yahoo Finance",
+      "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPRjlYNG9WWi1SSGRaVjBaM0RlODNHYnFHTUFmUDZrd29rWHZxSEtTTVUtMXFlWl9WYlFSMV91ZHZRcnhmRERrZHJlazJTYVRFSHdzZXpNZFlFM01acHBWMTk2d0VWSVpMV1JBbi14R0ZZLWRYUXExYm1LOVFrSHhIUXgyLVotUXFJNUZxT1drLU5KdkhMNE9zUkh5MUt3dw?oc=5",
+      "datetime": 1787391901
+    },
+    {
+      "headline": "Rising bond yields have stocks 'on the brink' of a 20% drop, strategist warns - Business Insider",
+      "source": "Business Insider",
+      "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNbHd3X3hLUzFOTUNKOFFUNElhSDFqSFVicDhoUWhKRGFVODZ2ZUhSRFZ1dmRpNHl2amtxaFBwUERlZmhNWFJyNTNYV0h1bmU3MTluNkZTLU1GWm1IRGlQb2VTc3RITC1RdFBPM2Y4ZlNZRW1jLWQ2ZVc1NlBGbE14cUFRSGotaUtJZkxJUWdrUXhNaklKZzZ3LUIyZ3NHbzhxS044Y1JYeVdrNTA?oc=5",
+      "datetime": 1787390730
+    },
+    {
+      "headline": "Warren Buffett's Last Warning About the Stock Market Could Haunt Wall Street for Years. History Says This Will Happen Next. - The Motley Fool",
+      "source": "The Motley Fool",
+      "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcFVLamx0OWE5TkZvd0NvQWQ5LVUtLVlSRktWb01yOHFFZjZ4azFkM3d5UE1ySU55SE93NE5ZdHpZUEJnQUhRUVJlY2IySWZKNmR6emZHZmx3WlgwdWVQRDZCQzZJNFctdFV6ZnJCeVM4SVVUU25TUl8tY3dTUEM2U3hYYTNBUlJjbW9uUVB2NUVLUQ?oc=5",
+      "datetime": 1787390465
+    },
+    {
+      "headline": "Tesla recalls nearly 3M vehicles over doors that may be difficult to open after crashes - Fox Business",
+      "source": "Fox Business",
+      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNLVlqMHFNOXRQVWNiRU1ueFJ4dkcxZVEyZFRTbFRIQmlwQUhCVVROTDd6bDhBSmU5ZE5ad2lXZkd4SzRZRWx4Qm50Wld0ckl3Z2VxY0hKcHl5WkduQjZ4WmwwdzBGZFhRWU1DMzNCSkh3YUwzajNkUW5uZ1BjOExfV0JXM1hDUmxkMnlUTWJNUUNPZ0Z5dmhHZWJCc2x0U0VaVjdhRkd5SThDVVFoMldYSVRQTzbSAboBQVVfeXFMT1VzcS1NMFV4Q1FWUTkxMDZhNnNXdk00T0lMTVRUbDE1ZXVkNGpHV2pSbFBfbnM4U3ZYU3lLQ2ZQRkZCUTNkSFd6UlktSEE0djcxd0Z4N0RKYWV5ejZGZGFZVjJHeUk1YUVhNllDa0F1WVZwZFN2eDlLd3l3N2hwanJUd2Q0SGRfZ1JHVzVLdHg5eWhqNFozbVBSYzh4cTNEUm9zUnpQSUZRMkVBUVNuZi1RVU5yY3BWN1V3?oc=5",
+      "datetime": 1787389740
+    },
+    {
+      "headline": "Warren Buffett's Last Warning About the Stock Market Could Haunt Wall Street for Years. History Says This Will Happen Next. - Yahoo Finance",
+      "source": "Yahoo Finance",
+      "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQV1l4Q1M5dVBuazhLU09McEllbG9oVWFFT2pzNzdtTlJwVWFfSkY5OEpYMmowNk5DdVFmYkFfWHNpLWpBQ0VqNmdKNm9nRnNPbU9SQklsQ09Ic3BRRFViTkM3TTlTa3BwR2tsUWYzYVR2WWtUb3lmUWFicU95MFpSNWVmT0ZESkNncjk4SzI4REVvdFIxXzhQMlF4X3hEN1VS?oc=5",
+      "datetime": 1787389680
+    },
+    {
+      "headline": "Gen Z Is Building Wealth By Investing Instead of Buying Homes - The New York Times",
+      "source": "The New York Times",
+      "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTFBMVTlIaUs5YncxSkpZTDdjUkNTRXVTdW85dFlGZlJ3ZkMwWmdKNk8xTzlzdG4yeGN1QTBzaXZGdm9HQ2FQNkdicDBKOFQtZWRnN0F6UHdUMDZMdVZsN2U3TlQ1UzZ1d2tXMWFGVE9fam9sRDdjN3VibENkOA?oc=5",
+      "datetime": 1787389306
+    },
+    {
+      "headline": "How the US and Middle East allies flipped the oil script on Iran - CNN",
+      "source": "CNN",
+      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE9YTC0xeHFnRksyMW1Za2NzTTNEdGNRTkpfRXIxNkppdklHTEpDUUd2QXdZd3EzbXB3SVpuVkFsVkUwNHMweVNnNkYwVHZfM3pyM3BnLXp2eTRjeFFPbXVTTmxjY0ZqdlgwSWRlUm9taTdoUFU?oc=5",
+      "datetime": 1787389229
+    }
+  ]
+}

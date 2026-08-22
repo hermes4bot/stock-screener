@@ -189,14 +189,13 @@ PAGE = """
   <button onclick="this.parentElement.style.display='none'">✕</button>
 </div>
 
-{% for r in rows %}
-{% if loop.index0 % 10 == 0 %}
-<div class="batch" data-batch-group>
-  <button class="groupBtn" onclick="openGroup(this)">▶ Open next 10 visible stocks (D1+M15+M1)</button>
-  <span class="info">Only shown in Favorites view</span>
+<div class="batch" id="favBatch" style="display:none">
+  <button class="groupBtn" onclick="openFavBatch(this)">▶ Open next 10 favorite stocks (D1+M15+M1)</button>
+  <button class="groupBtn secondary" onclick="openAllFavs(this)">▶ Open ALL favorites</button>
+  <span class="info">Opens TradingView tabs for your favorites — allow pop-ups!</span>
 </div>
-<div class="batchHint">— hidden unless "★ Favorites only" is active —</div>
-{% endif %}
+
+{% for r in rows %}
 <div class="stock" data-symbol="{{ r.symbol }}">
   <div class="head">
     <button class="favbtn" id="fav-{{ r.symbol }}" onclick="toggleFav('{{ r.symbol }}', this)"
@@ -255,31 +254,46 @@ function openAll(sym) {
   if (opened < 3) showBlockerHelp(3 - opened);
 }
 
-// Group opener: opens the next 10 *visible* stocks after this button,
-// each with D1+M15+M1. Batch buttons only appear in Favorites view.
-function openGroup(btn) {
-  let opened = 0, wanted = 0, count = 0;
-  let el = btn.closest('.batch').nextElementSibling;
-  while (el && count < 10) {
-    if (!el.classList.contains('stock')) { el = el.nextElementSibling; continue; }
-    if (el.style.display === 'none') { el = el.nextElementSibling; continue; }
-    count++;
-    for (const u of tfUrls(el.dataset.symbol)) {
-      wanted++;
-      const w = window.open(u, "_blank");
-      if (w) opened++;
-    }
-    el = el.nextElementSibling;
+// Favorites batch openers: operate on favorite stocks in list order.
+// The bar is only visible in Favorites view.
+function favSymbols() {
+  const favs = getFavs();
+  return allSymbols.filter(s => favs.includes(s));
+}
+
+let favBatchIndex = 0;
+
+function openFavBatch(btn) {
+  const syms = favSymbols();
+  const start = favBatchIndex;
+  if (start >= syms.length) {
+    btn.parentElement.querySelector('.info').textContent = '✅ All favorites already opened. Re-enter Favorites view to reset.';
+    return;
   }
+  const chunk = syms.slice(start, start + 10);
+  let opened = 0;
+  for (const s of chunk) for (const u of tfUrls(s)) {
+    if (window.open(u, "_blank")) opened++;
+  }
+  favBatchIndex = start + chunk.length;
   const info = btn.parentElement.querySelector('.info');
-  if (opened === wanted && wanted > 0) {
-    info.textContent = `✅ Opened ${wanted} tabs (${count} stocks).`;
-    info.style.color = '#26a69a';
-  } else {
-    info.textContent = `⚠ Only ${opened} of ${wanted} tabs opened.`;
-    info.style.color = '#ef5350';
-    showBlockerHelp(wanted - opened);
+  const total = opened === chunk.length * 3 ? '✅' : '⚠';
+  info.textContent = `${total} Opened ${opened} tabs (favorites ${start + 1}–${favBatchIndex} of ${syms.length}).`;
+  info.style.color = opened === chunk.length * 3 ? '#26a69a' : '#ef5350';
+}
+
+function openAllFavs(btn) {
+  const syms = favSymbols();
+  let opened = 0, wanted = syms.length * 3;
+  for (const s of syms) for (const u of tfUrls(s)) {
+    if (window.open(u, "_blank")) opened++;
   }
+  favBatchIndex = syms.length;
+  const info = btn.parentElement.querySelector('.info');
+  info.textContent = opened === wanted
+    ? `✅ Opened all ${wanted} tabs (${syms.length} favorites).`
+    : `⚠ Only ${opened} of ${wanted} tabs opened.`;
+  info.style.color = opened === wanted ? '#26a69a' : '#ef5350';
 }
 
 function showBlockerHelp(blocked) {
@@ -367,14 +381,12 @@ function applyFavFilter() {
     const sym = el.dataset.symbol;
     el.style.display = (!only || favs.includes(sym)) ? '' : 'none';
   });
-  // Batch open buttons exist only in Favorites view
-  document.querySelectorAll('[data-batch-group]').forEach(el => {
-    el.style.display = only ? '' : 'none';
-    const hint = el.nextElementSibling;
-    if (hint && hint.classList.contains('batchHint')) {
-      hint.style.display = only ? 'none' : '';
-    }
-  });
+  // Single favorites batch bar: only visible in Favorites view
+  const bar = document.getElementById('favBatch');
+  if (bar) {
+    bar.style.display = only ? '' : 'none';
+    if (only) favBatchIndex = 0;   // reset progress on re-entering Favorites
+  }
   t.textContent = only ? `★ Favorites (${favs.length}) — showing` : `★ Favorites only`;
   t.classList.toggle('fav-active', only);
 }

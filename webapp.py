@@ -318,14 +318,16 @@ function tvWidget(symbol, interval, containerId) {
     hide_side_toolbar: true,
     allow_symbol_change: false,
     save_image: false,
-    // EMA(9) orange + SMA(20) blue on every embedded chart
-    // Correct built-in IDs: MAExp = exponential MA, MASimple = simple MA
-    studies: [
-      { id: "MAExp@tv-basicstudies", inputs: { length: 9 },
-        styles: { "plot_0": { color: "#ff9800" } }, overlaid: true },
-      { id: "MASimple@tv-basicstudies", inputs: { length: 20 },
-        styles: { "plot_0": { color: "#2962ff" } }, overlaid: true },
-    ],
+    // EMA(9) orange + SMA(20) blue. Plain string IDs + studies_overrides:
+    // object keys like "styles"/"overlaid" are NOT supported in the widget
+    // constructor and make studies fail silently.
+    studies: ["MAExp@tv-basicstudies", "MASimple@tv-basicstudies"],
+    studies_overrides: {
+      "maexp.length": 9,
+      "maexp.plot.color": "#ff9800",
+      "masimple.length": 20,
+      "masimple.plot.color": "#2962ff",
+    },
     time_frames: [],
     from: Math.floor(Date.now() / 1000) - (LOOKBACK[interval] || 90) * 86400,
   });

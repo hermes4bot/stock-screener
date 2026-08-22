@@ -24,10 +24,13 @@ HISTORY_DIR = DATA_DIR / "history"
 app = Flask(__name__)
 
 TV_CHART_BASE = "https://www.tradingview.com/chart/0ZTktGqI/"
-# Chart-page links: studies as [[name, {inputs}], ...]
+# Chart-page links: studies as [[name, {inputs}, styles], ...]
+# EMA(9) = orange, SMA(20) = blue
 STUDIES = (
-    "%5B%5B%22MAExp%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
-    "%2C%5B%22MASimple%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
+    "%5B%5B%22MAExp%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%2C"
+    "%7B%22plot_0%22%3A%7B%22color%22%3A%22%23ff9800%22%7D%7D%5D"
+    "%2C%5B%22MASimple%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%2C"
+    "%7B%22plot_0%22%3A%7B%22color%22%3A%22%232962ff%22%7D%7D%5D%5D"
 )
 # Widget embeds: studies as [{"id": name, "inputs": {...}}, ...]
 WIDGET_STUDIES = "%5B%7B%22id%22%3A%22EMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A9%7D%7D%2C%7B%22id%22%3A%22SMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A20%7D%7D%5D"
@@ -166,6 +169,8 @@ PAGE = """
   .favbtn:hover { color:#fdd835 }
   .favbtn.fav-on { color:#fdd835 }
   a.fav-active { color:#fdd835 !important }
+  .batchHint { text-align:center; color:var(--muted); font-size:.75rem;
+               margin:-10px 0 14px }
 </style>
 </head>
 <body>
@@ -185,6 +190,13 @@ PAGE = """
 </div>
 
 {% for r in rows %}
+{% if loop.index0 % 10 == 0 %}
+<div class="batch" data-batch-group>
+  <button class="groupBtn" onclick="openGroup(this)">▶ Open next 10 visible stocks (D1+M15+M1)</button>
+  <span class="info">Only shown in Favorites view</span>
+</div>
+<div class="batchHint">— hidden unless "★ Favorites only" is active —</div>
+{% endif %}
 <div class="stock" data-symbol="{{ r.symbol }}">
   <div class="head">
     <button class="favbtn" id="fav-{{ r.symbol }}" onclick="toggleFav('{{ r.symbol }}', this)"
@@ -243,6 +255,33 @@ function openAll(sym) {
   if (opened < 3) showBlockerHelp(3 - opened);
 }
 
+// Group opener: opens the next 10 *visible* stocks after this button,
+// each with D1+M15+M1. Batch buttons only appear in Favorites view.
+function openGroup(btn) {
+  let opened = 0, wanted = 0, count = 0;
+  let el = btn.closest('.batch').nextElementSibling;
+  while (el && count < 10) {
+    if (!el.classList.contains('stock')) { el = el.nextElementSibling; continue; }
+    if (el.style.display === 'none') { el = el.nextElementSibling; continue; }
+    count++;
+    for (const u of tfUrls(el.dataset.symbol)) {
+      wanted++;
+      const w = window.open(u, "_blank");
+      if (w) opened++;
+    }
+    el = el.nextElementSibling;
+  }
+  const info = btn.parentElement.querySelector('.info');
+  if (opened === wanted && wanted > 0) {
+    info.textContent = `✅ Opened ${wanted} tabs (${count} stocks).`;
+    info.style.color = '#26a69a';
+  } else {
+    info.textContent = `⚠ Only ${opened} of ${wanted} tabs opened.`;
+    info.style.color = '#ef5350';
+    showBlockerHelp(wanted - opened);
+  }
+}
+
 function showBlockerHelp(blocked) {
   const bar = document.getElementById('popupHelp');
   document.getElementById('blockedCount').textContent = blocked;
@@ -265,11 +304,13 @@ function tvWidget(symbol, interval, containerId) {
     hide_side_toolbar: true,
     allow_symbol_change: false,
     save_image: false,
-    // EMA(9) + SMA(20) on every embedded chart
+    // EMA(9) orange + SMA(20) blue on every embedded chart
     // Correct built-in IDs: MAExp = exponential MA, MASimple = simple MA
     studies: [
-      { id: "MAExp@tv-basicstudies", inputs: { length: 9 } },
-      { id: "MASimple@tv-basicstudies", inputs: { length: 20 } },
+      { id: "MAExp@tv-basicstudies", inputs: { length: 9 },
+        styles: { "plot_0": { color: "#ff9800" } }, overlaid: true },
+      { id: "MASimple@tv-basicstudies", inputs: { length: 20 },
+        styles: { "plot_0": { color: "#2962ff" } }, overlaid: true },
     ],
     time_frames: [],
     from: Math.floor(Date.now() / 1000) - (LOOKBACK[interval] || 90) * 86400,
@@ -319,14 +360,21 @@ function toggleFav(sym, btn) {
 }
 
 function applyFavFilter() {
-  const only = document.getElementById('favToggle').dataset.on === '1';
+  const t = document.getElementById('favToggle');
+  const only = t.dataset.on === '1';
   const favs = getFavs();
   document.querySelectorAll('.stock').forEach(el => {
     const sym = el.dataset.symbol;
     el.style.display = (!only || favs.includes(sym)) ? '' : 'none';
   });
-  const shown = document.querySelectorAll('.stock:not([style*="none"])').length;
-  const t = document.getElementById('favToggle');
+  // Batch open buttons exist only in Favorites view
+  document.querySelectorAll('[data-batch-group]').forEach(el => {
+    el.style.display = only ? '' : 'none';
+    const hint = el.nextElementSibling;
+    if (hint && hint.classList.contains('batchHint')) {
+      hint.style.display = only ? 'none' : '';
+    }
+  });
   t.textContent = only ? `★ Favorites (${favs.length}) — showing` : `★ Favorites only`;
   t.classList.toggle('fav-active', only);
 }

@@ -1,11 +1,11 @@
 {
   "date": "2026-08-22",
-  "fetched_at": "2026-08-22T10:33:46+00:00",
+  "fetched_at": "2026-08-22T10:41:20+00:00",
   "feeds": [
     "Google News: Markets",
     "Google News: Business"
   ],
-  "count": 10,
+  "count": 15,
   "articles": [
     {
       "headline": "The US-Mexico cattle border is reopening. Not every American rancher is celebrating - CNN",
@@ -66,6 +66,36 @@
       "source": "CNN",
       "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE9YTC0xeHFnRksyMW1Za2NzTTNEdGNRTkpfRXIxNkppdklHTEpDUUd2QXdZd3EzbXB3SVpuVkFsVkUwNHMweVNnNkYwVHZfM3pyM3BnLXp2eTRjeFFPbXVTTmxjY0ZqdlgwSWRlUm9taTdoUFU?oc=5",
       "datetime": 1787389229
+    },
+    {
+      "headline": "Two huge explosions go off in southern Taiwan - CNN",
+      "source": "CNN",
+      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE94TkxPQ0ZIeVdtUURRSUl1VTIxVzZnU0FCeWtPZFR3ckpPX0pfZ3IxMWJpNzdGLWZkb2lTYktvRVV4LWM0SXV0ZXNfZU1vSFJBV3MwZGM5cC1uQ0t3dS1lYlVtck9LbjdOcHhrcW1MMVhja042RnU0Z1ozcHR5QQ?oc=5",
+      "datetime": 1787388900
+    },
+    {
+      "headline": "Tapestry's CEO Gave Up Stock Right After a Rough Earnings Reaction. Here's What to Know - The Motley Fool",
+      "source": "The Motley Fool",
+      "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQeGhWRWxhSGU2Tld2Qk1sdHRLRDQ0Y3NaX25JelBrM0swYno3ZG14LTdIVzlUc3YtMWhNZm4wcWhRa3pDQkZFbFgwM2RmM3E2Yk5FWWN4ejcwUEl6T3FUcmx4NGw3a0dfVUdnNXItOVp2MWxuc1E4QUNWa0NJMkpDV29KMHJyS2xtVDg1azBiV0JrNUdMVFpqOWRBRjZXcWRGSl94cFFiRkdRVzQyY0JxYl80NVZZMDNpYlRjWkZRNVVzSVdDRGxiUDZ2TFNfaXRnVXc?oc=5",
+      "datetime": 1787386247
+    },
+    {
+      "headline": "Tapestry's CEO Gave Up Stock Right After a Rough Earnings Reaction. Here's What to Know - Currently.com",
+      "source": "Currently.com",
+      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxNZnJLaWU3S1N2RV9fRzlocDFtYThGYTZNdFZEc2toaTE4TDg2dW1YMVQ5aUZEd1R4b3pybkFWOUhtYzVrN1FjUE9HcU82OG5BSUVVNkFhSnJOeGxoWV90Nm1OcHNiZmZTa2hMcnVpM0hnZ1JONFNkblJGcVh1MTRUZnFYVHJSclBx?oc=5",
+      "datetime": 1787385334
+    },
+    {
+      "headline": "Can you 3x an investment on the stock market in just 2 years? This incredible FTSE 100 stock did! - Yahoo Finance UK",
+      "source": "Yahoo Finance UK",
+      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxObzVNV2hDSDA5ZUktZm9wbGJUMVdfa045TEtnSTU2aUJPc0E0M0pGRl9OSG1Cb2xrTVdESE94NkxJSXZzYTh0b0JRVWs5UGlLWHdGdVRONWRWV3N3RVJmMWsxMkhrMlNReFFlc291ZERlNkc2U0FOYXNoYXR4aVVLTmpEdGhvLXM?oc=5",
+      "datetime": 1787383080
+    },
+    {
+      "headline": "Six investors reveal the biggest market risks \u2014 and one strategy they agree on - CNBC",
+      "source": "CNBC",
+      "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNSVVOVmM1RDEwbVJta1cxQXctLXR6cGI5VGhRZjRKWHVIWWFoTzlOTGFzRWI4a3MwbkctMzdHUVpfM0V5bmdqN25oWjREWW5nWFROdnhScVJENHpDVjQwSEd3MXFjemFEZEs2cV95bkI3Z01vclQ1djRpMWw1R3laZzZxSUFjcEdmdjJFZ0VLVEkzQdIBlwFBVV95cUxOclo0VHlaamFYUzFiR3l6RGgwQnhIbS1XTzJwQU1hc3ZrQm1pLVBsRzdyNG5jQUxfV2ZYNVpGeVE5a0wzcmU0RUhWdWJnZDFrM2NvclBPZ1VXX1JwNWpIaU9xaDcwMjVOYnhWdU9rVVRLSzg0NXNzenRPZzlDMDBoa0dkMnpPU0JaWWdLNmEyTTNGMmNuUjFR?oc=5",
+      "datetime": 1787374801
     }
   ]
 }

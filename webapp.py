@@ -326,9 +326,11 @@ function tvWidget(symbol, interval, containerId) {
       { id: "MASimple@tv-basicstudies", inputs: { length: 20 } },
     ],
     studies_overrides: {
-      "moving average.ma.color": "#ff9800",
+      // (empirical: overrides map by study order; swapped so that
+      //  EMA9 renders orange and SMA20 blue)
+      "moving average.ma.color": "#2962ff",
       "moving average.ma.linewidth": 2,
-      "moving average_1.ma.color": "#2962ff",
+      "moving average_1.ma.color": "#ff9800",
       "moving average_1.ma.linewidth": 2,
     },
     time_frames: [],

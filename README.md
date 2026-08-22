@@ -29,6 +29,9 @@ cp .env.example .env        # add your FINNHUB_API_KEY
 # Fast gap scan (TradingView API, all US stocks in 1 request, ~1 s)
 .venv/bin/python tv_gaps.py 10 --save
 
+# Web frontend (shows latest gaps + TradingView chart links with EMA9/SMA20)
+./run_webapp.sh 8080        # open http://<host>:8080
+
 # Finnhub-based scans (slower, per-symbol)
 .venv/bin/python scan_gaps.py all        # major indices (~16 min)
 .venv/bin/python scan_gaps.py full --save  # whole US market (~95 min)

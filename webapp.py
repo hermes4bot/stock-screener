@@ -2,22 +2,20 @@
 """
 Gap Screener Web Frontend
 =========================
-Serves the latest gap scan results as a website.
-Each stock links to TradingView with EMA9 + SMA20 preloaded,
-plus embedded D1 and M15 mini charts.
+Shows the latest gap scan results with BIG always-visible charts (D1/M15/M1).
+Batch buttons open TradingView tabs in steps of 10 stocks x 3 timeframes.
+Clicking a ticker opens all 3 timeframes for that stock.
 
 Usage:
   .venv/bin/python webapp.py [port]     # default 8080
 """
 
 import json
-import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
-from flask import Flask, abort, render_template_string
+from flask import Flask, abort, render_template_string, jsonify
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -25,33 +23,39 @@ HISTORY_DIR = DATA_DIR / "history"
 
 app = Flask(__name__)
 
+TV_CHART_BASE = "https://www.tradingview.com/chart/0ZTktGqI/"
+STUDIES = (
+    "%5B%5B%22EMA%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
+    "%2C%5B%22SMA%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
+)
+INTERVALS = [("D", "D1"), ("15", "M15"), ("1", "M1")]
+
+
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 
-def latest_history_files() -> list[Path]:
-    """Newest first: tv_gaps_*.json preferred, then gaps_*.json."""
+def latest_history_file() -> Path | None:
     tv = sorted(HISTORY_DIR.glob("tv_gaps_*.json"), reverse=True)
     fh = sorted(HISTORY_DIR.glob("gaps_*.json"), reverse=True)
-    return tv + fh
+    return (tv + fh)[0] if (tv + fh) else None
 
 
 def load_latest() -> dict | None:
-    for f in latest_history_files():
-        try:
-            data = json.loads(f.read_text())
-            if data.get("total_gaps") is not None and (data.get("gaps") or data.get("groups")):
-                data["_file"] = f.name
-                return data
-        except Exception:
-            continue
-    return None
+    f = latest_history_file()
+    if not f:
+        return None
+    try:
+        data = json.loads(f.read_text())
+        data["_file"] = f.name
+        return data
+    except Exception:
+        return None
 
 
 def flatten(record: dict) -> list[dict]:
-    """Normalize both history formats into a flat row list."""
     rows = record.get("gaps")
-    if rows is not None:  # tv_gaps format
+    if rows is not None:
         return rows
     out = []
     for group, items in (record.get("groups") or {}).items():
@@ -61,39 +65,22 @@ def flatten(record: dict) -> list[dict]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+def chart_url(symbol: str, interval: str) -> str:
+    return f"{TV_CHART_BASE}?symbol={quote(symbol)}&interval={interval}&studies={STUDIES}"
 
-def tv_chart_url(row: dict, interval: str) -> str:
-    """TradingView chart link with EMA9 + SMA20 studies preloaded.
-    interval: 'D' or '15'
-    """
-    sym = row.get("symbol", "")
-    exch = row.get("exchange", "NASDAQ")  # fallback; TV redirects anyway
-    # Try OTC/NASDAQ/NYSE agnostic: pass plain symbol, TV picks exchange
+
+def widget_url(symbol: str, interval: str, w=640, h=360) -> str:
     return (
-        f"https://www.tradingview.com/chart/0ZTktGqI/"
-        f"?symbol={quote(sym)}&interval={interval}"
-        f"&studies=%5B%5B%22EMA%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
-        f"%2C%5B%22SMA%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
+        f"https://s.tradingview.com/widgetembed/?symbol={quote(symbol)}"
+        f"&interval={interval}&hidesidetoolbar=1&saveimage=0&theme=dark&style=1"
+        f"&studies={STUDIES}&hideideas=1&withdateranges=0&timezone=Etc/UTC"
+        f"&width={w}&height={h}"
     )
 
 
-def mini_chart_url(row: dict, interval: str, width=360, height=200) -> str:
-    """TradingView mini-symbol chart widget image URL (static embed)."""
-    sym = row.get("symbol", "")
-    # TV mini chart embed via widget page
-    return (
-        f"https://s.tradingview.com/widgetembed/?symbol={quote(sym)}"
-        f"&interval={interval}&hidesidetoolbar=1&symboledit=1&saveimage=0"
-        f"&toolbarbg=rgba(19,23,34,1)&theme=dark&style=1"
-        f"&studies=%5B%5B%22EMA%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
-        f"%2C%5B%22SMA%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D%5D"
-        f"&hideideas=1&withdateranges=0&details=0"
-        f"&width={width}&height={height}"
-    )
-
+# ---------------------------------------------------------------------------
+# Page
+# ---------------------------------------------------------------------------
 
 PAGE = """
 <!doctype html>
@@ -104,74 +91,122 @@ PAGE = """
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root { --bg:#131722; --panel:#1e222d; --text:#d1d4dc; --muted:#787b86;
-          --up:#26a69a; --dn:#ef5350; --accent:#2962ff; }
+          --up:#26a69a; --dn:#ef5350; --accent:#2962ff;
+          --btn:#2962ff; --btn-hover:#1e53e5; }
   * { box-sizing:border-box }
   body { margin:0; font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
-         background:var(--bg); color:var(--text); padding:24px }
-  h1 { font-size:1.5rem; margin:0 0 4px }
-  .meta { color:var(--muted); font-size:.85rem; margin-bottom:20px }
-  table { border-collapse:collapse; width:100%; background:var(--panel);
-          border-radius:8px; overflow:hidden }
-  th,td { padding:10px 12px; text-align:left; font-size:.88rem;
-          border-bottom:1px solid #2a2e39 }
-  th { color:var(--muted); font-weight:600; text-transform:uppercase;
-       font-size:.72rem; letter-spacing:.05em }
-  tr:hover td { background:#252a36 }
-  a { color:var(--accent); text-decoration:none; font-weight:600 }
-  a:hover { text-decoration:underline }
-  .up { color:var(--up) } .dn { color:var(--dn) }
-  .tier { display:inline-block; padding:2px 8px; border-radius:10px;
-          font-size:.75rem; font-weight:700 }
+         background:var(--bg); color:var(--text); padding:20px }
+  h1 { font-size:1.4rem; margin:0 0 4px }
+  .meta { color:var(--muted); font-size:.85rem; margin-bottom:14px }
+
+  .batch { position:sticky; top:0; z-index:10; background:var(--panel);
+           border:1px solid #2a2e39; border-radius:8px; padding:10px 14px;
+           margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;
+           align-items:center }
+  .batch button { background:var(--btn); color:#fff; border:none;
+                  padding:9px 18px; border-radius:6px; font-weight:700;
+                  font-size:.88rem; cursor:pointer }
+  .batch button:hover { background:var(--btn-hover) }
+  .batch button:disabled { background:#3a3f4b; cursor:not-allowed }
+  .batch .info { color:var(--muted); font-size:.82rem }
+
+  .stock { background:var(--panel); border:1px solid #2a2e39;
+           border-radius:10px; margin-bottom:22px; overflow:hidden }
+  .head { display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+          padding:12px 16px; border-bottom:1px solid #2a2e39 }
+  .sym a { font-size:1.15rem; font-weight:800; letter-spacing:.03em }
+  .name { color:var(--muted); font-size:.85rem; flex:1 }
+  .tier { padding:2px 10px; border-radius:10px; font-size:.75rem; font-weight:700 }
   .t50 { background:#3d1f24; color:var(--dn) }
   .t20 { background:#3d331f; color:#ff9800 }
   .t10 { background:#1f2c3d; color:#42a5f5 }
-  details { margin-top:6px }
-  summary { cursor:pointer; color:var(--accent); font-size:.8rem }
-  .charts { display:flex; gap:12px; flex-wrap:wrap; padding:8px 0 }
-  iframe { border:1px solid #2a2e39; border-radius:6px }
+  .gap { font-size:1.05rem; font-weight:800 }
+  .up { color:var(--up) } .dn { color:var(--dn) }
+  .stat { color:var(--muted); font-size:.83rem }
+  .tf-links a { margin-left:8px; font-size:.82rem }
+  .openall { background:#2a2e39; color:var(--text); border:none;
+             padding:6px 12px; border-radius:6px; cursor:pointer;
+             font-size:.8rem; font-weight:600 }
+  .openall:hover { background:#363c4a }
+
+  .charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr));
+            gap:10px; padding:12px }
+  iframe { width:100%; height:380px; border:1px solid #2a2e39; border-radius:6px;
+           background:#131722 }
 </style>
 </head>
 <body>
 <h1>🇺🇸 US Pre-Market Gap Screener</h1>
-<div class="meta">
-  {{ meta }} · {{ rows|length }} stocks ·
-  <a href="/">refresh</a>
+<div class="meta">{{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a></div>
+
+<div class="batch" id="batchBar">
+  <button id="btnOpen10">▶ Open next 10 stocks (D1+M15+M1)</button>
+  <button id="btnReset">↺ Reset</button>
+  <span class="info" id="batchInfo">Opens 30 TradingView tabs per click — allow pop-ups!</span>
 </div>
 
-<table>
-<tr>
-  <th>Ticker</th><th>Name</th><th>Tier</th><th>Gap %</th>
-  <th>PM Price</th><th>Prev Close</th><th>PM Volume</th><th>Mkt Cap</th><th>Charts</th>
-</tr>
 {% for r in rows %}
-<tr>
-  <td><a href="{{ r.tv_d }}" target="_blank" title="Open in TradingView (EMA9+SMA20)"><b>{{ r.symbol }}</b></a></td>
-  <td>{{ r.description or '' }}</td>
-  <td><span class="tier t{{ r.tier_num }}">{{ r.tier }}</span></td>
-  <td class="{{ 'up' if r.gap_pct > 0 else 'dn' }}"><b>{{ '%+.2f'|format(r.gap_pct) }}%</b></td>
-  <td>{{ r.pre_price or '-' }}</td>
-  <td>{{ r.prev_close or '-' }}</td>
-  <td>{{ r.pm_vol }}</td>
-  <td>{{ r.mcap }}</td>
-  <td>
-    <a href="{{ r.tv_d }}" target="_blank">D1</a> ·
-    <a href="{{ r.tv_15 }}" target="_blank">M15</a>
-    <details>
-      <summary>charts</summary>
-      <div class="charts">
-        <iframe src="{{ r.mini_d }}" width="380" height="210"></iframe>
-        <iframe src="{{ r.mini_15 }}" width="380" height="210"></iframe>
-      </div>
-    </details>
-  </td>
-</tr>
-{% endfor %}
-</table>
+<div class="stock" data-symbol="{{ r.symbol }}">
+  <div class="head">
+    <span class="sym"><a href="#" onclick="openAll('{{ r.symbol }}');return false;"
+        title="Open D1+M15+M1 in TradingView">{{ r.symbol }}</a></span>
+    <span class="name">{{ r.description or '' }}</span>
+    <span class="tier t{{ r.tier_num }}">{{ r.tier }}</span>
+    <span class="gap {{ 'up' if r.gap_pct > 0 else 'dn' }}">{{ '%+.2f'|format(r.gap_pct) }}%</span>
+    <span class="stat">PM {{ r.pre_price or '-' }} · prev {{ r.prev_close or '-' }}
+      · vol {{ r.pm_vol }} · mcap {{ r.mcap }}</span>
+    <span class="tf-links">
+      <a href="{{ r.tv_d }}" target="_blank">D1</a>
+      <a href="{{ r.tv_15 }}" target="_blank">M15</a>
+      <a href="{{ r.tv_1 }}" target="_blank">M1</a>
+    </span>
+    <button class="openall" onclick="openAll('{{ r.symbol }}')">open 3× TF</button>
+  </div>
 
-<p class="meta">
-  Chart links open TradingView with <b>EMA(9)</b> + <b>SMA(20)</b> activated.<br>
-  Sources: TradingView scanner · history files in <code>data/history/</code>
-</p>
+  <div class="charts">
+    <iframe loading="lazy" src="{{ r.mini_d }}"></iframe>
+    <iframe loading="lazy" src="{{ r.mini_15 }}"></iframe>
+    <iframe loading="lazy" src="{{ r.mini_1 }}"></iframe>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+// ---- Batch opener: 10 stocks per click, each D1+M15+M1 -------------------
+let batchIndex = 0;
+const symbols = JSON.parse('{{ symbols_json|safe }}');
+
+function tfUrls(sym) {
+  const base = "https://www.tradingview.com/chart/0ZTktGqI/";
+  const studies = "{{ studies|safe }}";
+  return [["D","D"],["15","M15"],["1","M1"]].map(([iv]) =>
+      base + "?symbol=" + encodeURIComponent(sym) + "&interval=" + iv + "&studies=" + studies);
+}
+
+function openAll(sym) {
+  for (const u of tfUrls(sym)) window.open(u, "_blank");
+}
+
+document.getElementById('btnOpen10').addEventListener('click', function() {
+  const start = batchIndex;
+  if (start >= symbols.length) { this.disabled = true; return; }
+  // Browsers block large synchronous pop-up bursts; chain them with small delays.
+  const urls = [];
+  for (let i = start; i < Math.min(start + 10, symbols.length); i++) {
+    urls.push(...tfUrls(symbols[i]));
+  }
+  urls.forEach((u, i) => setTimeout(() => window.open(u, "_blank"), i * 250));
+  batchIndex = Math.min(start + 10, symbols.length);
+  document.getElementById('batchInfo').textContent =
+      `Opened stocks ${start + 1}–${batchIndex} of ${symbols.length} (${urls.length} tabs)`;
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  batchIndex = 0;
+  document.getElementById('batchInfo').textContent =
+      'Reset. Opens 30 TradingView tabs per click — allow pop-ups!';
+});
+</script>
 </body>
 </html>
 """
@@ -195,19 +230,28 @@ def index():
         r["pm_vol"] = fmt_vol(r.get("premarket_volume"))
         r["mcap"] = fmt_mcap(r.get("market_cap"))
         r["gap_pct"] = r.get("gap_pct", 0)
-        r["tv_d"] = tv_chart_url(r, "D")
-        r["tv_15"] = tv_chart_url(r, "15")
-        r["mini_d"] = mini_chart_url(r, "D")
-        r["mini_15"] = mini_chart_url(r, "15")
+        sym = r["symbol"]
+        r["tv_d"] = chart_url(sym, "D")
+        r["tv_15"] = chart_url(sym, "15")
+        r["tv_1"] = chart_url(sym, "1")
+        r["mini_d"] = widget_url(sym, "D")
+        r["mini_15"] = widget_url(sym, "15")
+        r["mini_1"] = widget_url(sym, "1")
         enriched.append(r)
 
-    # Sort: tier desc, then |gap|
     enriched.sort(key=lambda x: (int(x["tier_num"]), abs(x["gap_pct"])), reverse=True)
 
     scanned = record.get("scanned_at", "?")
     src = record.get("source", "finnhub")
     meta = f"Scanned {scanned} UTC · source: {src}"
-    return render_template_string(PAGE, rows=enriched, meta=meta)
+
+    return render_template_string(
+        PAGE,
+        rows=enriched,
+        meta=meta,
+        symbols_json=json.dumps([r["symbol"] for r in enriched]),
+        studies=STUDIES,
+    )
 
 
 def fmt_vol(v):

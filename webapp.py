@@ -16,6 +16,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from flask import Flask, abort, render_template_string, jsonify, send_file
+from jinja2 import Environment, BaseLoader, select_autoescape
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -24,16 +25,15 @@ HISTORY_DIR = DATA_DIR / "history"
 app = Flask(__name__)
 
 TV_CHART_BASE = "https://www.tradingview.com/chart/0ZTktGqI/"
-# Chart-page links: studies as [[name, {inputs}, styles], ...]
+# Chart-page links: studies as [[name, {inputs}], ...]
 # EMA(9) = orange, SMA(20) = blue
 STUDIES = (
-    "%5B%5B%22MAExp%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%2C"
-    "%7B%22plot_0%22%3A%7B%22color%22%3A%22%23ff9800%22%7D%7D%5D"
-    "%2C%5B%22MASimple%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%2C"
-    "%7B%22plot_0%22%3A%7B%22color%22%3A%22%232962ff%22%7D%7D%5D%5D"
+    "%5B%5B%22MAExp%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
+    "%2C%5B%22MASimple%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D"
 )
 # Widget embeds: studies as [{"id": name, "inputs": {...}}, ...]
-WIDGET_STUDIES = "%5B%7B%22id%22%3A%22EMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A9%7D%7D%2C%7B%22id%22%3A%22SMA%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A20%7D%7D%5D"
+# Correct IDs: MAExp (exponential MA) / MASimple (simple MA)
+WIDGET_STUDIES = "%5B%7B%22id%22%3A%22MAExp%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A9%7D%7D%2C%7B%22id%22%3A%22MASimple%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A20%7D%7D%5D"
 INTERVALS = [("D", "D1"), ("15", "M15"), ("1", "M1")]
 # Visible history per interval: interval -> lookback in days
 LOOKBACK_DAYS = {"D": 90, "15": 10, "1": 2}
@@ -174,35 +174,31 @@ PAGE = """
 </style>
 </head>
 <body>
-<h1>🇺🇸 US Pre-Market Gap Screener</h1>
+<h1>🇺🇸 US Pre-Market Gap Screener{% if static_snapshot %} <span style="color:#787b86;font-size:.8rem">(offline snapshot)</span>{% endif %}</h1>
 <div class="meta">
-  {{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a> ·
+  {{ meta }} · {{ rows|length }} stocks ·
+  {% if not static_snapshot %}<a href="/">refresh</a> ·
   <a href="/gaps.zip" title="Latest scan as ZIP-wrapped CSV">⬇ gaps.zip</a> ·
   <a href="#" id="favToggle" data-on="0"
      onclick="const t=this;t.dataset.on=t.dataset.on==='1'?'0':'1';applyFavFilter();return false;">★ Favorites only</a>
+  {% else %}open file locally · chart links open TradingView with EMA9+SMA20{% endif %}
 </div>
 
+{% if not static_snapshot %}
 <div class="popupHelp" id="popupHelp" style="display:none">
   ⚠ <b><span id="blockedCount">0</span> tabs were blocked</b> by your browser.
   Click the pop-up blocker icon in the address bar →
   <b>“Always allow pop-ups from 10.53.164.28”</b> (Chrome: also tick
   “allow multiple pop-ups”) → Done, then click again.
-  <button onclick="this.parentElement.style.display='none'">✕</button>
 </div>
-
-<div class="batch" id="favBatch" style="display:none">
-  <button class="groupBtn" onclick="openFavBatch(this)">▶ Open next 10 favorite stocks (D1+M15+M1)</button>
-  <button class="groupBtn secondary" onclick="openAllFavs(this)">▶ Open ALL favorites</button>
-  <span class="info">Opens TradingView tabs for your favorites — allow pop-ups!</span>
-</div>
+{% endif %}
 
 {% for r in rows %}
 <div class="stock" data-symbol="{{ r.symbol }}">
   <div class="head">
-    <button class="favbtn" id="fav-{{ r.symbol }}" onclick="toggleFav('{{ r.symbol }}', this)"
-            title="Add to favorites">☆</button>
-    <span class="sym"><a href="{{ r.tv_d }}" target="_blank"
-        onclick="openAll('{{ r.symbol }}'); return false;"
+    {% if not static_snapshot %}<button class="favbtn" id="fav-{{ r.symbol }}" onclick="toggleFav('{{ r.symbol }}', this)"
+            title="Add to favorites">☆</button>{% endif %}
+    <span class="sym"><a href="{{ r.tv_d }}"{% if not static_snapshot %} onclick="openAll('{{ r.symbol }}'); return false;"{% endif %}
         title="Open D1+M15+M1 in TradingView">{{ r.symbol }}</a></span>
     <span class="name">{{ r.description or '' }}</span>
     <span class="tier t{{ r.tier_num }}">{{ r.tier }}</span>
@@ -217,6 +213,16 @@ PAGE = """
     <button class="openall" onclick="openAll('{{ r.symbol }}')">open 3× TF</button>
   </div>
 
+  {% if static_snapshot %}
+  <div class="charts" style="grid-template-columns:1fr;gap:4px">
+    <span class="tf-links" style="padding:6px 0">
+      📈 <a href="{{ r.tv_d }}" target="_blank">D1 chart</a> ·
+      <a href="{{ r.tv_15 }}" target="_blank">M15 chart</a> ·
+      <a href="{{ r.tv_1 }}" target="_blank">M1 chart</a>
+    </span>
+  </div>
+  {% else %}
+  <div style="padding:12px">
   <div class="charts">
     <div class="chart-d1" id="chart-{{ r.symbol }}-D"></div>
     <div class="chart-m15" id="chart-{{ r.symbol }}-15"></div>
@@ -227,9 +233,22 @@ PAGE = """
       <div id="chart-{{ r.symbol }}-1"></div>
     </div>
   </div>
+  </div>
+  <div class="charts">
+    <div class="chart-d1" id="chart-{{ r.symbol }}-D"></div>
+    <div class="chart-m15" id="chart-{{ r.symbol }}-15"></div>
+  </div>
+  <div class="m1wrap">
+    <button class="m1btn" onclick="toggleM1(this, '{{ r.symbol }}')">▼ Show M1 chart (full width)</button>
+    <div class="m1box" style="display:none">
+      <div id="chart-{{ r.symbol }}-1"></div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endfor %}
 
+{% if not static_snapshot %}
 <script>
 // ---- Group openers: each group of 10 stocks has its own button -----------
 const allSymbols = JSON.parse('{{ symbols_json|safe }}');
@@ -412,20 +431,25 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 window.addEventListener('load', () => window.initCharts && window.initCharts());
 </script>
+{% endif %}
 </body>
 </html>
 """
 
 
-@app.route("/")
-def index():
-    record = load_latest()
-    if not record:
-        abort(503, "No scan history yet. Run: .venv/bin/python tv_gaps.py 10 --save")
+def fmt_vol(v):
+    if not v:
+        return "-"
+    for div, suf in [(1e9, "B"), (1e6, "M"), (1e3, "K")]:
+        if v >= div:
+            return f"{v/div:.1f}{suf}"
+    return str(v)
 
-    rows = flatten(record)
+
+def prepare_rows(record):
+    """Shared row enrichment for web page and static HTML export."""
     enriched = []
-    for r in rows:
+    for r in flatten(record):
         tier = r.get("tier", "10%+")
         r = dict(r)
         r["tier"] = tier
@@ -443,34 +467,50 @@ def index():
         r["mini_15"] = widget_url(sym, "15")
         r["mini_1"] = widget_url(sym, "1")
         enriched.append(r)
-
     enriched.sort(key=lambda x: (int(x["tier_num"]), abs(x["gap_pct"])), reverse=True)
+    return enriched
 
+
+def render_html(record, static_snapshot=False):
+    """Render the gap scan page as HTML using the same template as the website."""
+    enriched = prepare_rows(record)
     scanned = record.get("scanned_at", "?")
-    src = record.get("source", "finnhub")
-    meta = f"Scanned {scanned} UTC · source: {src}"
+    src_name = record.get("source", "finnhub")
+    meta = f"Scanned {scanned} UTC · source: {src_name}"
+    if static_snapshot:
+        meta += " · offline snapshot"
 
-    return render_template_string(
-        PAGE,
+    env = Environment(
+        loader=BaseLoader(),
+        autoescape=select_autoescape(["html", "xml"])
+    )
+    template = env.from_string(PAGE)
+    return template.render(
         rows=enriched,
         meta=meta,
         symbols_json=json.dumps([r["symbol"] for r in enriched]),
         studies=STUDIES,
+        static_snapshot=static_snapshot,
     )
 
 
-def fmt_vol(v):
-    if not v:
-        return "-"
-    for div, suf in [(1e9, "B"), (1e6, "M"), (1e3, "K")]:
-        if v >= div:
-            return f"{v/div:.1f}{suf}"
-    return str(v)
+@app.route("/")
+def index():
+    record = load_latest()
+    if not record:
+        abort(503, "No scan history yet. Run: .venv/bin/python tv_gaps.py 10 --save")
+
+    enriched = prepare_rows(record)
+    scanned = record.get("scanned_at", "?")
+    src = record.get("source", "finnhub")
+    meta = f"Scanned {scanned} UTC · source: {src}"
+
+    return render_html(record, static_snapshot=False)
 
 
 @app.route("/gaps.zip")
 def gaps_zip():
-    """ZIP-wrapped CSV of the latest scan (GPX-style delivery for analysis)."""
+    """ZIP with CSV + full HTML report (same style as the website)."""
     import csv
     import io
     import zipfile
@@ -483,7 +523,8 @@ def gaps_zip():
     w = csv.writer(buf)
     w.writerow(["symbol", "gap_pct", "tier", "premarket_price", "prev_close",
                 "premarket_volume", "market_cap", "sector", "description"])
-    for r in flatten(record):
+    enriched = prepare_rows(record)
+    for r in enriched:
         w.writerow([
             r.get("symbol"), r.get("gap_pct"),
             r.get("tier") or "10%+",
@@ -492,9 +533,12 @@ def gaps_zip():
             r.get("sector"), r.get("description"),
         ])
 
+    html = render_html(record, static_snapshot=True)
+
     zbuf = io.BytesIO()
     with zipfile.ZipFile(zbuf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr(f"gaps_{record.get('date', 'latest')}.csv", buf.getvalue())
+        z.writestr(f"gaps_{record.get('date', 'latest')}.html", html)
     zbuf.seek(0)
 
     resp = send_file(zbuf, mimetype="application/zip",

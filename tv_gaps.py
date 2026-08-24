@@ -25,6 +25,12 @@ from pathlib import Path
 
 import requests
 
+# Telegram delivery: dedicated gap-alert identity if set, else main bot.
+GAP_TG_TOKEN = os.environ.get("GAP_TELEGRAM_BOT_TOKEN",
+                              os.environ.get("TELEGRAM_BOT_TOKEN", ""))
+GAP_TG_CHAT = os.environ.get("GAP_TELEGRAM_CHAT_ID",
+                             os.environ.get("TELEGRAM_CHAT_ID", ""))
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -221,21 +227,26 @@ def save_history(rows: list[dict]) -> Path:
 
 
 def send_telegram(message: str) -> bool:
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if not token or not chat_id:
+    if not GAP_TG_TOKEN or not GAP_TG_CHAT:
         print(message)
         return False
-    try:
-        resp = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": message[:4000]},
-            timeout=30,
-        )
-        return resp.status_code == 200
-    except Exception as e:
-        log.error(f"Telegram error: {e}")
-        return False
+    ok = True
+    for i in range(0, len(message), 4000):
+        try:
+            resp = requests.post(
+                f"https://api.telegram.org/bot{GAP_TG_TOKEN}/sendMessage",
+                json={"chat_id": GAP_TG_CHAT, "text": message[i:i + 4000]},
+                timeout=30,
+            )
+            if resp.status_code != 200:
+                log.error(f"Telegram error {resp.status_code}: {resp.text[:200]}")
+                ok = False
+        except Exception as e:
+            log.error(f"Telegram error: {e}")
+            ok = False
+    if ok:
+        log.info("Telegram message sent")
+    return ok
 
 
 # ---------------------------------------------------------------------------

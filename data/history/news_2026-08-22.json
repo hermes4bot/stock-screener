@@ -1,101 +1,29 @@
 {
   "date": "2026-08-22",
-  "fetched_at": "2026-08-22T10:41:20+00:00",
+  "fetched_at": "2026-08-22T21:31:51+00:00",
   "feeds": [
     "Google News: Markets",
     "Google News: Business"
   ],
-  "count": 15,
+  "count": 3,
   "articles": [
     {
-      "headline": "The US-Mexico cattle border is reopening. Not every American rancher is celebrating - CNN",
-      "source": "CNN",
-      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPRkhjUndlXzZVbzkzbmZLZnhaU3Y3ald6Wl9sRi0xbWxnajRhYlUzUVJobDg4ZUxNemJ5S0RZNWk5aHpOTnBrLUkzR3lDdnpUUmdBbF9lMW9CVmZvcGZGRl9RU1BOV2poSnV1VEhwdURYdm9pZTh2bjZrbi1hOVlmQ2lfS2h3TVJtR05mMg?oc=5",
-      "datetime": 1787392830
-    },
-    {
-      "headline": "It\u2019s never been easier to grow your wealth using the stock market - The Telegraph",
-      "source": "The Telegraph",
-      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQdkNDUVA0QWYwRmhLOGhheERnVUk3MnM5aklmOWhtak9zMDlxUGhaUjRxTS1nRG5sb1EwUkZsNVlOd2sxOE8zZ3dOYTVNelFOLVhKZzhoUmwwclMxeDRqbHhJeEpEbUNrb05JaXdsc1RfdmRnT0k0bG10bXpMTXNUUEhmWEhQM2ptX3NQUmN5RVBybmpJVmJGWXB0X1JOM0xfRUppWVdXdzR4bEdKWGdFQnBB?oc=5",
-      "datetime": 1787392800
-    },
-    {
-      "headline": "If a Stock Market Crash Is Coming, Warren Buffett's Playbook Says Do This 1 Thing Right Now - The Motley Fool",
+      "headline": "What Would Alan Greenspan Say About This Stock Market? - The Motley Fool",
       "source": "The Motley Fool",
-      "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxOREptSTM2S0kyQ1JZcl9qVnVsOFNkaWdEOUI5ejc4VENERk9mNUVpMU0tenU3MU5LU1c3TTJkZWdUUHhVSTFmb1NBSVcxNWg4NTlaZFJNTXJST3phcWtma00tRWNfSXVTR19CckNHUmF6S1RabW80R1QxWTZIZVZHUXV0RmM2dmtTZzZyV2luamZPOFEtVWpUaWhNMEpUbGs2NTFnN2kzTlV2ZG5KT195YmYyQ3Uyb3hCM3p2bU83SFJzRFBMcVppU1A2U2duQQ?oc=5",
-      "datetime": 1787392687
+      "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxNYXUwcGxhaGd4TEZYZ0I1MVV0T3diNTFCNTVHd3RZWjB3aDNTN2U4TFhyWkNicnE3Y1RjVDlHbDZfb2FJN0hab1JBbFVJMWhhNG8zeU9qbXRka05lZ2k0eW10RUhjdldicE1ZeFg5VmdzTXFCNHZKVU1zSXVEUG5ycjlSLTFtMDFSZmRwUzBkUkQydE42T2dWdw?oc=5",
+      "datetime": 1787433785
     },
     {
-      "headline": "If a Stock Market Crash Is Coming, Warren Buffett's Playbook Says Do This 1 Thing Right Now - Yahoo Finance",
-      "source": "Yahoo Finance",
-      "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPRjlYNG9WWi1SSGRaVjBaM0RlODNHYnFHTUFmUDZrd29rWHZxSEtTTVUtMXFlWl9WYlFSMV91ZHZRcnhmRERrZHJlazJTYVRFSHdzZXpNZFlFM01acHBWMTk2d0VWSVpMV1JBbi14R0ZZLWRYUXExYm1LOVFrSHhIUXgyLVotUXFJNUZxT1drLU5KdkhMNE9zUkh5MUt3dw?oc=5",
-      "datetime": 1787391901
-    },
-    {
-      "headline": "Rising bond yields have stocks 'on the brink' of a 20% drop, strategist warns - Business Insider",
-      "source": "Business Insider",
-      "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNbHd3X3hLUzFOTUNKOFFUNElhSDFqSFVicDhoUWhKRGFVODZ2ZUhSRFZ1dmRpNHl2amtxaFBwUERlZmhNWFJyNTNYV0h1bmU3MTluNkZTLU1GWm1IRGlQb2VTc3RITC1RdFBPM2Y4ZlNZRW1jLWQ2ZVc1NlBGbE14cUFRSGotaUtJZkxJUWdrUXhNaklKZzZ3LUIyZ3NHbzhxS044Y1JYeVdrNTA?oc=5",
-      "datetime": 1787390730
-    },
-    {
-      "headline": "Warren Buffett's Last Warning About the Stock Market Could Haunt Wall Street for Years. History Says This Will Happen Next. - The Motley Fool",
-      "source": "The Motley Fool",
-      "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcFVLamx0OWE5TkZvd0NvQWQ5LVUtLVlSRktWb01yOHFFZjZ4azFkM3d5UE1ySU55SE93NE5ZdHpZUEJnQUhRUVJlY2IySWZKNmR6emZHZmx3WlgwdWVQRDZCQzZJNFctdFV6ZnJCeVM4SVVUU25TUl8tY3dTUEM2U3hYYTNBUlJjbW9uUVB2NUVLUQ?oc=5",
-      "datetime": 1787390465
-    },
-    {
-      "headline": "Tesla recalls nearly 3M vehicles over doors that may be difficult to open after crashes - Fox Business",
-      "source": "Fox Business",
-      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNLVlqMHFNOXRQVWNiRU1ueFJ4dkcxZVEyZFRTbFRIQmlwQUhCVVROTDd6bDhBSmU5ZE5ad2lXZkd4SzRZRWx4Qm50Wld0ckl3Z2VxY0hKcHl5WkduQjZ4WmwwdzBGZFhRWU1DMzNCSkh3YUwzajNkUW5uZ1BjOExfV0JXM1hDUmxkMnlUTWJNUUNPZ0Z5dmhHZWJCc2x0U0VaVjdhRkd5SThDVVFoMldYSVRQTzbSAboBQVVfeXFMT1VzcS1NMFV4Q1FWUTkxMDZhNnNXdk00T0lMTVRUbDE1ZXVkNGpHV2pSbFBfbnM4U3ZYU3lLQ2ZQRkZCUTNkSFd6UlktSEE0djcxd0Z4N0RKYWV5ejZGZGFZVjJHeUk1YUVhNllDa0F1WVZwZFN2eDlLd3l3N2hwanJUd2Q0SGRfZ1JHVzVLdHg5eWhqNFozbVBSYzh4cTNEUm9zUnpQSUZRMkVBUVNuZi1RVU5yY3BWN1V3?oc=5",
-      "datetime": 1787389740
-    },
-    {
-      "headline": "Warren Buffett's Last Warning About the Stock Market Could Haunt Wall Street for Years. History Says This Will Happen Next. - Yahoo Finance",
-      "source": "Yahoo Finance",
-      "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQV1l4Q1M5dVBuazhLU09McEllbG9oVWFFT2pzNzdtTlJwVWFfSkY5OEpYMmowNk5DdVFmYkFfWHNpLWpBQ0VqNmdKNm9nRnNPbU9SQklsQ09Ic3BRRFViTkM3TTlTa3BwR2tsUWYzYVR2WWtUb3lmUWFicU95MFpSNWVmT0ZESkNncjk4SzI4REVvdFIxXzhQMlF4X3hEN1VS?oc=5",
-      "datetime": 1787389680
-    },
-    {
-      "headline": "Gen Z Is Building Wealth By Investing Instead of Buying Homes - The New York Times",
-      "source": "The New York Times",
-      "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTFBMVTlIaUs5YncxSkpZTDdjUkNTRXVTdW85dFlGZlJ3ZkMwWmdKNk8xTzlzdG4yeGN1QTBzaXZGdm9HQ2FQNkdicDBKOFQtZWRnN0F6UHdUMDZMdVZsN2U3TlQ1UzZ1d2tXMWFGVE9fam9sRDdjN3VibENkOA?oc=5",
-      "datetime": 1787389306
-    },
-    {
-      "headline": "How the US and Middle East allies flipped the oil script on Iran - CNN",
+      "headline": "Indiana mayor says residents 'frustrated and fearful' after thousands left without power for over a week - CNN",
       "source": "CNN",
-      "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE9YTC0xeHFnRksyMW1Za2NzTTNEdGNRTkpfRXIxNkppdklHTEpDUUd2QXdZd3EzbXB3SVpuVkFsVkUwNHMweVNnNkYwVHZfM3pyM3BnLXp2eTRjeFFPbXVTTmxjY0ZqdlgwSWRlUm9taTdoUFU?oc=5",
-      "datetime": 1787389229
+      "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxPUVBwamwzNjVrd1Z3QmNIOWJoUFVlMDdxSV9QZkx2LVh0WFgwYUVvcnBKalROTlNUdGNPNHFfbVJZN3VCTk5hS0pUWlFISjk3TTJLNzRNUUs4R2Nyei1VQlhoS2dpZHhNcXVzM0FhWmdqeFUtYjNKbDZOcXIybmkwakhlaldVUVRMOVZzV1Bhb3BaX244NmVNblJSWWVYbkh2cXZz?oc=5",
+      "datetime": 1787433096
     },
     {
-      "headline": "Two huge explosions go off in southern Taiwan - CNN",
-      "source": "CNN",
-      "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE94TkxPQ0ZIeVdtUURRSUl1VTIxVzZnU0FCeWtPZFR3ckpPX0pfZ3IxMWJpNzdGLWZkb2lTYktvRVV4LWM0SXV0ZXNfZU1vSFJBV3MwZGM5cC1uQ0t3dS1lYlVtck9LbjdOcHhrcW1MMVhja042RnU0Z1ozcHR5QQ?oc=5",
-      "datetime": 1787388900
-    },
-    {
-      "headline": "Tapestry's CEO Gave Up Stock Right After a Rough Earnings Reaction. Here's What to Know - The Motley Fool",
-      "source": "The Motley Fool",
-      "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQeGhWRWxhSGU2Tld2Qk1sdHRLRDQ0Y3NaX25JelBrM0swYno3ZG14LTdIVzlUc3YtMWhNZm4wcWhRa3pDQkZFbFgwM2RmM3E2Yk5FWWN4ejcwUEl6T3FUcmx4NGw3a0dfVUdnNXItOVp2MWxuc1E4QUNWa0NJMkpDV29KMHJyS2xtVDg1azBiV0JrNUdMVFpqOWRBRjZXcWRGSl94cFFiRkdRVzQyY0JxYl80NVZZMDNpYlRjWkZRNVVzSVdDRGxiUDZ2TFNfaXRnVXc?oc=5",
-      "datetime": 1787386247
-    },
-    {
-      "headline": "Tapestry's CEO Gave Up Stock Right After a Rough Earnings Reaction. Here's What to Know - Currently.com",
-      "source": "Currently.com",
-      "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxNZnJLaWU3S1N2RV9fRzlocDFtYThGYTZNdFZEc2toaTE4TDg2dW1YMVQ5aUZEd1R4b3pybkFWOUhtYzVrN1FjUE9HcU82OG5BSUVVNkFhSnJOeGxoWV90Nm1OcHNiZmZTa2hMcnVpM0hnZ1JONFNkblJGcVh1MTRUZnFYVHJSclBx?oc=5",
-      "datetime": 1787385334
-    },
-    {
-      "headline": "Can you 3x an investment on the stock market in just 2 years? This incredible FTSE 100 stock did! - Yahoo Finance UK",
-      "source": "Yahoo Finance UK",
-      "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxObzVNV2hDSDA5ZUktZm9wbGJUMVdfa045TEtnSTU2aUJPc0E0M0pGRl9OSG1Cb2xrTVdESE94NkxJSXZzYTh0b0JRVWs5UGlLWHdGdVRONWRWV3N3RVJmMWsxMkhrMlNReFFlc291ZERlNkc2U0FOYXNoYXR4aVVLTmpEdGhvLXM?oc=5",
-      "datetime": 1787383080
-    },
-    {
-      "headline": "Six investors reveal the biggest market risks \u2014 and one strategy they agree on - CNBC",
-      "source": "CNBC",
-      "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNSVVOVmM1RDEwbVJta1cxQXctLXR6cGI5VGhRZjRKWHVIWWFoTzlOTGFzRWI4a3MwbkctMzdHUVpfM0V5bmdqN25oWjREWW5nWFROdnhScVJENHpDVjQwSEd3MXFjemFEZEs2cV95bkI3Z01vclQ1djRpMWw1R3laZzZxSUFjcEdmdjJFZ0VLVEkzQdIBlwFBVV95cUxOclo0VHlaamFYUzFiR3l6RGgwQnhIbS1XTzJwQU1hc3ZrQm1pLVBsRzdyNG5jQUxfV2ZYNVpGeVE5a0wzcmU0RUhWdWJnZDFrM2NvclBPZ1VXX1JwNWpIaU9xaDcwMjVOYnhWdU9rVVRLSzg0NXNzenRPZzlDMDBoa0dkMnpPU0JaWWdLNmEyTTNGMmNuUjFR?oc=5",
-      "datetime": 1787374801
+      "headline": "Halliburton (HAL) Stock Looks Cheap On Earnings While Its 89% Run Raises Questions - simplywall.st",
+      "source": "simplywall.st",
+      "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPOWVTOEo5NDF3XzdhSGVVNEJDdHpLMlpaU2xIdHJ3ZVUwOWdSamlZem1hejFsS0xPemIzWjBZMWowRENqZlQtNEVjeG82bkM5cE5TdnBieU1Eb2hwSFdpc1VrTDJCbG04YkNxWTVJYmJaSGZkYTZGaXpRWnAyMXNydExwTDZKb0VKcEVab3NUeWtjdXJJckRXTU16X1J0RnF1ZUl5eVoyWmtuSGJoZXIyS0QtbThjUTU5bTBfMTctSDRBd03SAcgBQVVfeXFMTkc4Z2RLbHZaSGRxcm5wejZldDBneGc5aEZlb0JxNzR4eUZnM1FBQ2tkY01sRHpFcnhwemlSUVVMWC03ZG5lRTltUnpqWEtDZFVuS2ZSZ2JveWxWby1zRU10Szc0cHA3Q3VrbnhMY2s5UHFxOXZxNU1CME44LVAxZzRKM2poeE91RWN4Nkh2LVJYaC1oTTlON3lOTUw2R19paVNfeFlselFzOHhKLXNoSF9UNlFoX1RoMXJNTUQxNEVIU3NJWm9FSjk?oc=5",
+      "datetime": 1787430549
     }
   ]
 }

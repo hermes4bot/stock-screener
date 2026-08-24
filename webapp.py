@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-from flask import Flask, abort, render_template_string, jsonify
+from flask import Flask, abort, render_template_string, jsonify, send_file
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -177,6 +177,7 @@ PAGE = """
 <h1>🇺🇸 US Pre-Market Gap Screener</h1>
 <div class="meta">
   {{ meta }} · {{ rows|length }} stocks · <a href="/">refresh</a> ·
+  <a href="/gaps.zip" title="Latest scan as ZIP-wrapped CSV">⬇ gaps.zip</a> ·
   <a href="#" id="favToggle" data-on="0"
      onclick="const t=this;t.dataset.on=t.dataset.on==='1'?'0':'1';applyFavFilter();return false;">★ Favorites only</a>
 </div>
@@ -465,6 +466,40 @@ def fmt_vol(v):
         if v >= div:
             return f"{v/div:.1f}{suf}"
     return str(v)
+
+
+@app.route("/gaps.zip")
+def gaps_zip():
+    """ZIP-wrapped CSV of the latest scan (GPX-style delivery for analysis)."""
+    import csv
+    import io
+    import zipfile
+
+    record = load_latest()
+    if not record:
+        abort(503, "No scan history yet")
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["symbol", "gap_pct", "tier", "premarket_price", "prev_close",
+                "premarket_volume", "market_cap", "sector", "description"])
+    for r in flatten(record):
+        w.writerow([
+            r.get("symbol"), r.get("gap_pct"),
+            r.get("tier") or "10%+",
+            r.get("premarket_price"), r.get("close") or r.get("prev_close"),
+            r.get("premarket_volume"), r.get("market_cap"),
+            r.get("sector"), r.get("description"),
+        ])
+
+    zbuf = io.BytesIO()
+    with zipfile.ZipFile(zbuf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(f"gaps_{record.get('date', 'latest')}.csv", buf.getvalue())
+    zbuf.seek(0)
+
+    resp = send_file(zbuf, mimetype="application/zip",
+                     as_attachment=True, download_name="gaps.zip")
+    return resp
 
 
 def fmt_mcap(v):

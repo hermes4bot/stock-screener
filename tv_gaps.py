@@ -219,7 +219,6 @@ def save_history(rows: list[dict]) -> Path:
         "total_gaps": len(rows),
         "gaps": rows,
     })
-
     with open(filepath, "w") as f:
         json.dump(record, f, indent=2)
     log.info(f"History saved: {filepath}")
@@ -268,6 +267,10 @@ def main():
 
     quality = quality_filter(rows)
     log.info(f"After quality filter (PM volume >= 10K): {len(quality)} stocks")
+
+    # Attach tier labels so saved history carries them too
+    for r in quality:
+        r["tier"] = classify_tier(r["gap_pct"])
 
     print()
     print(report(quality))

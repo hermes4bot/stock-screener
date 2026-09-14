@@ -22,62 +22,12 @@ import requests
 SCRIPT_DIR = Path(__file__).parent
 HISTORY_DIR = SCRIPT_DIR / "data" / "history"
 
-TOKEN = os.environ.get("NEWS_TELEGRAM_BOT_TOKEN", "")
-CHAT = os.environ.get("NEWS_TELEGRAM_CHAT_ID", "")
+TOKEN = os.environ.get("GAP_TELEGRAM_BOT_TOKEN", "") or os.environ.get("NEWS_TELEGRAM_BOT_TOKEN", "")
+CHAT = os.environ.get("GAP_TELEGRAM_CHAT_ID", "") or os.environ.get("NEWS_TELEGRAM_CHAT_ID", "")
 
-
-def build_html(record: dict, rows: list[dict]) -> str:
-    date = record.get("date", "?")
-    scanned = record.get("scanned_at", "?")
-    parts = [f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<title>Gap scan {date}</title>
-<style>
-  body {{ font-family: -apple-system, sans-serif; background:#131722; color:#d1d4dc;
-         margin:0; padding:20px }}
-  h1 {{ font-size:1.3rem }}
-  .meta {{ color:#787b86; margin-bottom:16px }}
-  table {{ border-collapse:collapse; width:100%; font-size:.9rem }}
-  th, td {{ padding:6px 10px; border-bottom:1px solid #2a2e39; text-align:left }}
-  th {{ color:#787b86; font-weight:600 }}
-  tr:hover td {{ background:#1e222d }}
-  a {{ color:#2962ff; text-decoration:none; margin-right:8px }}
-  a.d1 {{ color:#ff9800 }}
-</style></head><body>
-<h1>US Pre-Market Gap Scan - {date}</h1>
-<div class="meta">Scanned {scanned} UTC · {len(rows)} stocks ·
-TradingView chart links open with EMA(9) orange + SMA(20) blue</div>
-<table>
-<tr><th>#</th><th>Symbol</th><th>Gap %</th><th>Tier</th><th>PM Price</th>
-<th>Prev Close</th><th>PM Vol</th><th>Mkt Cap</th><th>Sector</th>
-<th>Name</th><th>Charts</th></tr>
-"""]
-    for i, r in enumerate(rows, 1):
-        sym = r.get("symbol", "")
-        gap = r.get("gap_pct", 0)
-        color = "#26a69a" if gap > 0 else "#ef5350"
-        base = f"https://www.tradingview.com/chart/0ZTktGqI/?symbol={sym}"
-        links = (f'<a class="d1" href="{base}&interval=D" target="_blank">D1</a>'
-                 f'<a href="{base}&interval=15" target="_blank">M15</a>'
-                 f'<a href="{base}&interval=1" target="_blank">M1</a>')
-        mcap = r.get("market_cap")
-        mcap_s = f"{mcap/1e6:.0f}M" if mcap and mcap < 1e9 else (
-                 f"{mcap/1e9:.1f}B" if mcap else "-")
-        pmv = r.get("premarket_volume")
-        pmv_s = f"{pmv/1e6:.1f}M" if pmv and pmv >= 1e6 else (
-                f"{pmv/1e3:.0f}K" if pmv else "-")
-        parts.append(
-            f"<tr><td>{i}</td><td><b>{sym}</b></td>"
-            f"<td style='color:{color}'>{gap:+.2f}%</td>"
-            f"<td>{r.get('tier') or '10%+'}</td>"
-            f"<td>{r.get('premarket_price') or '-'}</td>"
-            f"<td>{r.get('close') or r.get('prev_close') or '-'}</td>"
-            f"<td>{pmv_s}</td><td>{mcap_s}</td>"
-            f"<td>{r.get('sector') or '-'}</td>"
-            f"<td>{(r.get('description') or '')[:40]}</td>"
-            f"<td>{links}</td></tr>")
-    parts.append("</table></body></html>")
-    return "\n".join(parts)
+# Import webapp's render_html for the full-page HTML (same as the live site)
+sys.path.insert(0, str(SCRIPT_DIR))
+from webapp import render_html
 
 
 def build_zip() -> tuple[bytes, str, int]:
@@ -92,27 +42,67 @@ def build_zip() -> tuple[bytes, str, int]:
 
     record = json.loads(path.read_text())
     date = record.get("date", path.stem.replace("tv_gaps_", ""))
-    rows = record.get("gaps", record.get("results", []))
 
+    # Select which rows to include (use same logic as webapp)
+    from webapp import flatten, prepare_rows
+    enriched = prepare_rows(record)
+
+    # Build CSV from the same enriched data
     import csv
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["symbol", "gap_pct", "tier", "premarket_price", "prev_close",
                 "premarket_volume", "market_cap", "sector", "description"])
-    for r in rows:
+    for r in enriched:
         w.writerow([
-            r.get("symbol"), r.get("gap_pct"), r.get("tier") or "10%+",
-            r.get("premarket_price"), r.get("close") or r.get("prev_close"),
+            r.get("symbol"), r.get("gap_pct"),
+            r.get("tier") or "10%+",
+            r.get("pre_price"), r.get("prev_close"),
             r.get("premarket_volume"), r.get("market_cap"),
             r.get("sector"), r.get("description"),
         ])
 
+    # Use webapp's full-page render_html with JS included (not static snapshot)
+    html = render_html(record, static_snapshot=False)
+
     zbuf = io.BytesIO()
     with zipfile.ZipFile(zbuf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr(f"gaps_{date}.csv", buf.getvalue())
-        z.writestr(f"gaps_{date}.html",
-                   build_html(record, rows))
-    return zbuf.getvalue(), date, len(rows)
+        z.writestr(f"gaps_{date}.html", html)
+
+    # Caption stats (same enriched rows as CSV/HTML)
+    stats = {"count": len(enriched), "tiers": {}, "top_up": None, "top_down": None}
+    ups = [r for r in enriched if (r.get("gap_pct") or 0) >= 0]
+    downs = [r for r in enriched if (r.get("gap_pct") or 0) < 0]
+    for r in enriched:
+        t = r.get("tier") or "10%+"
+        stats["tiers"][t] = stats["tiers"].get(t, 0) + 1
+    if ups:
+        u = max(ups, key=lambda r: r.get("gap_pct") or 0)
+        stats["top_up"] = (u.get("symbol"), u.get("gap_pct"))
+    if downs:
+        d = min(downs, key=lambda r: r.get("gap_pct") or 0)
+        stats["top_down"] = (d.get("symbol"), d.get("gap_pct"))
+    return zbuf.getvalue(), date, stats
+
+
+def build_caption(date, stats):
+    n = stats["count"]
+    tiers = " · ".join(f"{t}: {c}×" for t, c in
+                       sorted(stats["tiers"].items(),
+                              key=lambda kv: float(kv[0].rstrip("%+")),
+                              reverse=True)) or "—"
+    lines = [
+        f"📊 <b>Gap Scan {date}</b>",
+        f"📈 {n} stocks",
+        f"🏷️ {tiers}",
+    ]
+    if stats["top_up"]:
+        lines.append(f"🚀 Top: {stats['top_up'][0]} +{stats['top_up'][1]:.2f}%")
+    if stats["top_down"]:
+        lines.append(f"🔻 Flop: {stats['top_down'][0]} {stats['top_down'][1]:.2f}%")
+    lines.append(f"-- via system-cron · send_gaps_zip.py")
+    return "\n".join(lines)
 
 
 def main():
@@ -120,16 +110,16 @@ def main():
         print("NEWS_TELEGRAM_BOT_TOKEN / NEWS_TELEGRAM_CHAT_ID not set")
         sys.exit(1)
 
-    data, date, count = build_zip()
+    data, date, stats = build_zip()
 
-    caption = (f"📦 Gap scan {date} - {count} stocks >= threshold\n"
-               f"ZIP contains CSV + HTML (with D1/M15/M1 chart links)")
+    caption = build_caption(date, stats)
     url = f"https://api.telegram.org/bot{TOKEN}/sendDocument"
-    resp = requests.post(url, data={"chat_id": CHAT, "caption": caption},
+    resp = requests.post(url, data={"chat_id": CHAT, "caption": caption,
+                                    "parse_mode": "HTML"},
                          files={"document": ("gaps.zip", data)},
                          timeout=30)
     if resp.status_code == 200:
-        print(f"gaps.zip sent ({count} stocks, {len(data)} bytes)")
+        print(f"gaps.zip sent ({stats['count']} stocks, {len(data)} bytes)")
     else:
         print(f"Telegram error {resp.status_code}: {resp.text[:200]}")
         sys.exit(1)

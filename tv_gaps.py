@@ -273,13 +273,15 @@ def main():
         r["tier"] = classify_tier(r["gap_pct"])
 
     print()
-    print(report(quality))
+    msg = report(quality)
+    print(msg)
 
     if "--save" in sys.argv:
         save_history(quality)
 
-    if quality:
-        send_telegram(report(quality))
+    # Only send to Telegram if not using --save (send_gaps_zip.py handles ZIP delivery)
+    if "--save" not in sys.argv:
+        send_telegram(msg)
 
 
 if __name__ == "__main__":

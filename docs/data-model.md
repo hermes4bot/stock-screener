@@ -10,14 +10,14 @@ git, changes monthly) and **runtime data** (gitignored or historical).
 | `data/dow_jones.txt` | one ticker/line, `#` comments | monthly | Wikipedia |
 | `data/sp500_tickers.txt` | one ticker/line | monthly | Wikipedia |
 | `data/nasdaq_100.txt` | one ticker/line | quarterly | curated |
-| `data/all_us_stocks.txt` | one ticker/line + header comment | cached at first use | Finnhub `/stock/symbol?exchange=US` |
+| `data/all_us_stocks.txt` | one ticker/line + header comment | frozen (legacy Finnhub artifact, unused by TV path) | — |
 
 Filter for the US universe: `type == "Common Stock"`, `currency == "USD"`,
 MIC in {XNYS, XNAS, XASE, ARCA}.
 
-## Runtime caches (gitignored — regenerate automatically)
+## Runtime caches (retired with the Finnhub path — documented for reference)
 
-### `quotes_cache.json`
+### `quotes_cache.json` (legacy)
 ```json
 {
   "AAPL": {
@@ -26,9 +26,9 @@ MIC in {XNYS, XNAS, XASE, ARCA}.
   }
 }
 ```
-- TTL: 300 s · Source: Finnhub `/quote`
+- TTL was 300 s · Source was Finnhub `/quote`
 
-### `candles_cache.json`
+### `candles_cache.json` (legacy)
 ```json
 {
   "AAPL": {
@@ -37,7 +37,7 @@ MIC in {XNYS, XNAS, XASE, ARCA}.
   }
 }
 ```
-- TTL: 3600 s · Source: Twelve Data `/time_series`, interval=1day
+- TTL was 3600 s · Source was Twelve Data `/time_series`, interval=1day
 
 ## Historical results (permanent, in git)
 
@@ -69,7 +69,7 @@ Written by `tv_gaps.py --save`. Multiple scans per day merge.
 `tier` = highest boundary reached from `GAP_TIERS` (10/20/50). Minimum
 recorded gap: `GAP_THRESHOLD` (default 0.10).
 
-### `history/gaps_YYYY-MM-DD.json` (Finnhub fallback)
+### `history/gaps_YYYY-MM-DD.json` (retired Finnhub scanner)
 Same merge behavior; groups keyed by scan target:
 ```json
 {
@@ -82,7 +82,7 @@ Same merge behavior; groups keyed by scan target:
 ```
 Gap entries carry `tier` too.
 
-### `history/news_YYYY-MM-DD.json` (news bot)
+### `history/news_YYYY-MM-DD.json` (retired news bot)
 ```json
 {
   "date": "2026-08-22",
@@ -105,8 +105,9 @@ array of symbols. Not synced server-side.
 
 ## Environment
 
-`.env` (gitignored) — see `.env.example`:
-- `FINNHUB_API_KEY` (required for Finnhub path)
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (delivery)
-- `TWELVEDATA_API_KEY` (optional candles)
-- `GAP_THRESHOLD` (default 0.10), `NEWS_QUERY`, `NEWS_CATEGORY`
+`~/.hermes/.env` (gitignored) — live keys for the TV path:
+- `NEWS_TELEGRAM_BOT_TOKEN`, `NEWS_TELEGRAM_CHAT_ID` (delivery)
+- `GAP_TELEGRAM_BOT_TOKEN`, `GAP_TELEGRAM_CHAT_ID` (optional dedicated identity)
+
+Retired keys (Finnhub era, no longer required): `FINNHUB_API_KEY`,
+`TWELVEDATA_API_KEY`, `GAP_THRESHOLD`, `NEWS_QUERY`, `NEWS_CATEGORY`.

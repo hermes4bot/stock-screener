@@ -1,11 +1,11 @@
 ---
 name: stock-screener
-description: Detects pre-market stock gaps >=50% via Finnhub + cron.
+description: Detects pre-market stock gaps via TradingView scanner + system cron.
 category: mlops
-version: 1.0.0
+version: 2.1.0
 author: hermes-agent
 license: MIT
-tags: [stock, screener, gap-detection, finnhub, cron, telegram]
+tags: [stock, screener, gap-detection, tradingview, cron, telegram]
 metadata:
   hermes:
     tags: [finance, gap-scanner, market-data]
@@ -16,30 +16,32 @@ metadata:
 
 ## When to Use
 
-- When you need a daily pre-market stock screener that detects gaps >= 50% on US markets
-- When you want scheduled (cron) gap screening at 10:15 Berlin time (= 4:15 AM ET, start of US pre-market)
+- When you need a daily pre-market stock screener that detects gaps >= 10% on US markets
+- When you want scheduled gap screening weekdays 14:45 Berlin time, delivered as ZIP to Telegram
 - When you need to identify significant pre-market price moves before the US market open
 
 ## Overview
 
 This skill provides a Python-based stock gap screener that:
-- Fetches real-time US stock quotes from Finnhub API
-- Detects pre-market gaps >= 50% (configurable threshold)
-- Caches all fetched data to JSON to avoid redundant API calls
-- Supports incremental scanning: Dow, S&P 500, NASDAQ-100, or full US market
+- Fetches ALL US pre-market gaps in ONE TradingView scanner call (no key)
+- Quality-filters (PM volume >= 10K) and tiers (10/20/50%+)
+- Persists every scan to `data/history/tv_gaps_YYYY-MM-DD.json`
+- Delivers one ZIP (CSV + HTML) per trading day via `send_gaps_zip.py`
 
 ## Time Zone Reference (Berlin / CEST)
 
 | Session | US Eastern Time | Berlin Time |
 |---|---|---|
 | Pre-market start | 4:00 AM ET | 10:00 AM CEST |
-| **Scan time (cron)** | 4:15 AM ET | **10:15 AM CEST** |
+| **Scan time (system cron)** | 8:45 AM ET | **14:45 CEST** |
 | Market open | 9:30 AM ET | 3:30 PM CEST |
 | Market close | 4:00 PM ET | 10:00 PM CEST |
 
 ## Prerequisites
 
-1. **Finnhub API Key** (free tier): https://finnhub.io/dashboard
+1. **No API key needed** — TradingView scanner endpoint is keyless.
+   Telegram delivery uses `NEWS_TELEGRAM_BOT_TOKEN` / `NEWS_TELEGRAM_CHAT_ID`
+   from `/home/hermes/.hermes/.env`.
    - Free tier: real-time US stock quotes, 60 calls/min
 2. Python 3.11+ with uv
 
@@ -47,25 +49,20 @@ This skill provides a Python-based stock gap screener that:
 
 ```bash
 cd /home/hermes/dev/stock-screener
-uv venv
-uv pip install finnhub-python pandas requests
+uv sync --frozen --no-install-project   # deps from uv.lock (requests/flask/jinja2)
 cp .env.example .env
-# Edit .env and set FINNHUB_API_KEY
 ```
 
-## Usage
+## Usage (live chain)
 
 ```bash
-export FINNHUB_API_KEY="your_key_here"
+# Daily gap scan + ZIP delivery (also what system cron 14:45 runs)
+/home/hermes/.hermes/bin/uv sync --project /home/hermes/dev/stock-screener --frozen --no-install-project
+.venv/bin/python tv_gaps.py 10 --save
+.venv/bin/python send_gaps_zip.py
 
-# Single index scan (fast)
-.venv/bin/python scan_gaps.py dow       # 30 symbols, ~30s
-.venv/bin/python scan_gaps.py sp500     # 505 symbols, ~10 min
-.venv/bin/python scan_gaps.py nasdaq    # 298 symbols, ~6 min
-.venv/bin/python scan_gaps.py all       # All three, ~16 min
-
-# Full US market scan (4974 symbols, parallel, ~90 min)
-.venv/bin/python scan_gaps.py full      # Use --save to persist results
+# Retired: archive/scan_gaps.py (Finnhub fallback, needs finnhub+pandas re-added),
+# archive/news_bot.py, archive/daily_gap_cron.py (Notion leg dropped 2026-09-14)
 ```
 
 ## Cron Setup
@@ -74,9 +71,8 @@ Three cron jobs are pre-configured:
 
 | Job | Schedule | Purpose |
 |---|---|---|
-| `stock-gap-screener` | `15 10 * * 1-5` | Daily gap scan at 10:15 Berlin (4:15 AM ET) |
-| `monthly-full-market-scan` | `15 10 1-7 * *` | Monthly full US market scan with results saved |
-| `update-ticker-lists` | `15 10 1-7 * *` | Monthly ticker list update from Wikipedia |
+| system cron `run_stock_gaps.sh` | `45 14 * * 1-5` | Daily gap scan + ZIP to News Group (1 msg; ❌ only on failure) |
+| Hermes `update-ticker-lists` | `15 10 1-7 * *` | Monthly ticker list update from Wikipedia (deliver: local) |
 
 ## Data Files (in data/)
 
@@ -85,18 +81,21 @@ Three cron jobs are pre-configured:
 | `dow_jones.txt` | 30 Dow Jones tickers | Monthly |
 | `sp500_tickers.txt` | 505 S&P 500 tickers | Monthly |
 | `nasdaq_100.txt` | 298 NASDAQ-100 tickers (curated) | Quarterly |
-| `all_us_stocks.txt` | 4974 US stock symbols | Cached at first full scan |
-| `quotes_cache.json` | Cached Finnhub quotes (5-min TTL) | Auto-updated |
-| `candles_cache.json` | Cached daily closes (1-hour TTL) | Auto-updated |
+| `history/tv_gaps_YYYY-MM-DD.json` | Daily scan results (permanent, in git) | Daily (trading days) |
+| `all_us_stocks.txt`, `quotes_cache.json`, `candles_cache.json` | Legacy Finnhub artifacts (unused by TV path) | Frozen |
 
 ## Caching Strategy
 
-All fetched data is cached to stay within API limits:
-- **Quotes**: 5-min TTL (pre-market prices change frequently)
-- **Candles**: 1-hour TTL (daily closes don't change intraday)
-- Cache is checked before every API call — re-running the scan reuses recent data
+The TV path is stateless (one scanner call, no cache). Permanent history in
+`data/history/` doubles as the analysis base. Finnhub-era caches
+(`quotes_cache.json` 5-min TTL, `candles_cache.json` 1-h TTL) are legacy and
+unused — see `archive/`.
 
-## Scan Priority (for "full" mode)
+## Scan Priority
+
+Not applicable to the TV path (single call returns everything, filtered by
+PM volume ≥ 10K and tiers 10/20/50). The group-priority scheme below applied
+only to the retired Finnhub scanner and is kept for reference:
 
 When scanning the full US market, stocks are prioritized by gap likelihood:
 1. **Other US Stocks** (not in major indices) - micro/small-cap, most volatile
@@ -110,30 +109,30 @@ Gaps found in each group trigger real-time Telegram alerts.
 
 | Variable | Default | Description |
 |---|---|---|
-| `FINNHUB_API_KEY` | *(empty)* | Finnhub API key (required) |
-| `GAP_THRESHOLD` | `0.50` | Gap threshold (0.50 = 50%) |
-| `TELEGRAM_BOT_TOKEN` | *(empty)* | Telegram bot token |
-| `TELEGRAM_CHAT_ID` | *(empty)* | Telegram chat ID |
-| `TWELVEDATA_API_KEY` | `demo` | Twelve Data key for EMA/SMA |
-| `ENRICH_WITH_INDICATORS` | `0` | Set to 1 to enable EMA/SMA |
+| `NEWS_TELEGRAM_BOT_TOKEN` | *(empty)* | News Group bot token (delivery) |
+| `NEWS_TELEGRAM_CHAT_ID` | *(empty)* | News Group chat ID (delivery) |
+| `GAP_TELEGRAM_BOT_TOKEN` / `GAP_TELEGRAM_CHAT_ID` | *(fallback to NEWS_*)* | Dedicated gap-alert identity (optional) |
 
 ## Rate Limiting
 
-- Finnhub free tier: 60 calls/min
-- "full" scan uses parallel threads (5 workers) with shared rate limiter
-- Expected: ~57 calls/min, ~90 min for 4974 symbols
+- TradingView scanner: keyless, occasional HTTP 429 — the cron wrapper
+  retries 3× with 60 s delay; persistent failure sends one ❌ message.
+- Wikipedia (monthly ticker refresh): low frequency; a 429 only logs inside
+  the Hermes job — watch for stale `dow_jones.txt` / `sp500_tickers.txt`.
 
-## EMA/SMA Indicators (Optional)
+## EMA/SMA Indicators
 
-Enable with `--indicators` flag. Uses Twelve Data for daily closes:
-- Only needs last 200 closes for SMA(200)
-- Only fetched for stocks with gaps (not all symbols)
+Retired with the Finnhub path (`--indicators` / Twelve Data belonged to
+`archive/scan_gaps.py`). The dashboard draws EMA9/SMA20 via TradingView
+chart studies instead — no data fetching needed.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `scan_gaps.py` | Main gap scanner |
+| `tv_gaps.py` | Main gap scanner (TradingView API) |
+| `archive/scan_gaps.py` | Retired Finnhub fallback (archived 2026-09-14) |
 | `update_lists.py` | Monthly ticker list updater (Wikipedia) |
-| `run_screener.sh` | Shell wrapper for cron |
+| `run_webapp.sh` | Manual dashboard launcher (:8080) |
+| `archive/run_screener.sh` | Retired manual wrapper (pointed at archived scanner) |
 | `.env.example` | Environment variable template |

@@ -1,34 +1,34 @@
-# Roadmap
+# Roadmap (actual state as of 2026-09-14)
 
-The gap screener and news bot are the first modules of a growing market
-screening platform. Each new screener reuses the same pipeline:
-source → cache-first fetch → detection → persistence → report.
+Single live pipeline: TradingView scan → history → ZIP to News Group.
+Retired 2026-09-14: Finnhub fallback scanner, cache-first data layer,
+market news bot + its cron jobs, Notion leg (`daily-gap-cron` deleted).
+Details in `archive/README.md`; workflow in `architecture.md`.
 
 ## Done
 
 - [x] Pre-market gap scanner with tier ladder (10%+ / 20%+ / 50%+)
 - [x] TradingView scanner integration (`tv_gaps.py`) — all US pre-market
       gaps in ONE request, volume + market cap quality filters
-- [x] Finnhub fallback scanner (per-symbol, parallel full-market mode)
-- [x] Cache-first data layer (quotes 5 min, candles 1 h)
 - [x] Scan history persistence (`data/history/`, permanent, in git)
 - [x] Web frontend: D1 2/3 + M15 1/3 charts, M1 on demand,
       EMA9 orange / SMA20 blue on all charts and TV links
 - [x] Favorites (localStorage) + favorites-only filter + favorites batch
       tab opener ("next 10" / "ALL")
 - [x] Pop-up blocker detection with fix instructions
-- [x] Market news bot (Google News RSS → Telegram, daily 12:40)
 - [x] Monthly ticker list updates (Wikipedia)
+- [x] One-message rule: success = ZIP itself, every failure = one ❌,
+      every message carries its source footer
+- [x] Silence "0 packages upgraded" update notifications; report only
+      real updates or errors (done in system `os_update.sh`)
 - [x] Public repo, sanitized; docs kept in sync
 
 ## Next (near term)
 
 - [ ] `gap_stats` builder: aggregate history → per-symbol gap frequency
 - [ ] Server-side favorites (`data/favorites.json`) to sync across devices
-- [ ] Dedicated Telegram group for news bot (bot API cannot create groups —
-      user creates it, then cron delivers there only)
-- [ ] Silence "0 packages upgraded" update notifications; report only
-      real updates or errors
+- [ ] Ticker-staleness watchdog: alert if `dow_jones.txt` / `sp500_tickers.txt`
+      older than 40 days (a failed monthly refresh is silent today)
 
 ## Later (platform ideas)
 

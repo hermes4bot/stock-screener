@@ -234,16 +234,6 @@ PAGE = """
     </div>
   </div>
   </div>
-  <div class="charts">
-    <div class="chart-d1" id="chart-{{ r.symbol }}-D"></div>
-    <div class="chart-m15" id="chart-{{ r.symbol }}-15"></div>
-  </div>
-  <div class="m1wrap">
-    <button class="m1btn" onclick="toggleM1(this, '{{ r.symbol }}')">▼ Show M1 chart (full width)</button>
-    <div class="m1box" style="display:none">
-      <div id="chart-{{ r.symbol }}-1"></div>
-    </div>
-  </div>
   {% endif %}
 </div>
 {% endfor %}

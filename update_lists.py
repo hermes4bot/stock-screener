@@ -26,14 +26,35 @@ DATA_DIR.mkdir(exist_ok=True)
 
 HEADERS = {"User-Agent": "StockScreener/1.0 (contact@example.com)"}
 TIMEOUT = 30
+MAX_RETRIES = 4
+
+
+def fetch_url(url):
+    """GET with retries on 429/5xx (honors Retry-After, exponential backoff)."""
+    last_exc = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+            if resp.status_code == 429 or resp.status_code >= 500:
+                wait = resp.headers.get("Retry-After")
+                delay = int(wait) if (wait or "").isdigit() else 30 * attempt
+                log.warning(f"HTTP {resp.status_code} (attempt {attempt}/{MAX_RETRIES}), waiting {delay}s...")
+                time.sleep(delay)
+                continue
+            resp.raise_for_status()
+            return resp
+        except requests.RequestException as e:
+            last_exc = e
+            log.warning(f"Request failed (attempt {attempt}/{MAX_RETRIES}): {e}")
+            time.sleep(15 * attempt)
+    raise last_exc
 
 
 def fetch_wikipedia_sp500():
     """Fetch S&P 500 constituents from Wikipedia."""
     log.info("Fetching S&P 500 constituents from Wikipedia...")
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
+    resp = fetch_url(url)
     html = resp.text
 
     tickers = []
@@ -61,8 +82,7 @@ def fetch_wikipedia_dow():
     """Fetch Dow Jones constituents from Wikipedia."""
     log.info("Fetching Dow Jones constituents from Wikipedia...")
     url = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
-    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
+    resp = fetch_url(url)
     html = resp.text
 
     tickers = []

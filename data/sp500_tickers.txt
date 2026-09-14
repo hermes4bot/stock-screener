@@ -1,5 +1,5 @@
 # Sp500 Tickers
-# Updated: 2026-09-06
+# Updated: 2026-09-14
 
 CIK
 MMM

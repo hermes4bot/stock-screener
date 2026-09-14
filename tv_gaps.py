@@ -14,6 +14,8 @@ Usage:
 
 Environment:
   TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID - optional delivery
+  GAP_MIN_VOL - min pre-market volume filter (default 10000)
+  GAP_TIERS - comma-separated tier ladder, e.g. "10,20,50" (default same)
 """
 
 import os
@@ -35,7 +37,27 @@ GAP_TG_CHAT = os.environ.get("GAP_TELEGRAM_CHAT_ID",
 # Configuration
 # ---------------------------------------------------------------------------
 MIN_GAP_PCT = float(sys.argv[1]) if len(sys.argv) > 1 and not sys.argv[1].startswith("-") else 10.0
-GAP_TIERS = [10.0, 20.0, 50.0]
+
+
+def _env_tiers(default):
+    try:
+        tiers = sorted(float(x) for x in os.environ.get("GAP_TIERS", "").split(",") if x.strip())
+        return tiers or list(default)
+    except (TypeError, ValueError):
+        return list(default)
+
+
+GAP_TIERS = _env_tiers([10.0, 20.0, 50.0])
+
+
+def _env_int(name, default):
+    try:
+        return int(float(os.environ.get(name, default)))
+    except (TypeError, ValueError):
+        return default
+
+
+MIN_VOLUME = _env_int("GAP_MIN_VOL", 10_000)
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -265,7 +287,7 @@ def main():
 
     log.info(f"Raw results: {len(rows)} stocks with gaps >= {MIN_GAP_PCT}%")
 
-    quality = quality_filter(rows)
+    quality = quality_filter(rows, min_volume=MIN_VOLUME)
     log.info(f"After quality filter (PM volume >= 10K): {len(quality)} stocks")
 
     # Attach tier labels so saved history carries them too

@@ -1,7 +1,6 @@
 # Sp500 Tickers
-# Updated: 2026-09-29
+# Updated: 2026-10-02
 
-CIK
 MMM
 AOS
 ABT
@@ -264,7 +263,6 @@ ISRG
 IVZ
 INVH
 IQV
-IQVIA
 IRM
 JBHT
 JBL

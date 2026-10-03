@@ -49,7 +49,7 @@ This skill provides a Python-based stock gap screener that:
 
 ```bash
 cd /home/hermes/dev/stock-screener
-uv sync --frozen --no-install-project   # deps from uv.lock (requests/flask/jinja2)
+uv sync --frozen --no-install-project   # deps from uv.lock (requests/flask/jinja2/lxml)
 cp .env.example .env
 ```
 

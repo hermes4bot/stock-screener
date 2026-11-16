@@ -74,7 +74,9 @@ History accumulates forever — base for future gap-frequency stats and backtest
 
 ## Web frontend features
 
-- D1 chart at 2/3 width + M15 at 1/3; M1 full-width behind a toggle (lazy-loaded)
+- D1 chart at 2/3 width + M15 at 1/3, collapsible on request (visible by
+  default, same toggle pattern as M1); M1 full-width behind its own toggle
+  (lazy-loaded)
 - **EMA(9) orange, SMA(20) blue** on the embedded on-page charts
   (official `TradingView.widget` API)
 - Outbound TradingView links open a plain chart for that symbol/interval

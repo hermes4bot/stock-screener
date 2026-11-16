@@ -236,9 +236,14 @@ PAGE = """
   </div>
   {% else %}
   <div style="padding:12px">
-  <div class="charts">
-    <div class="chart-d1" id="chart-{{ r.symbol }}-D"></div>
-    <div class="chart-m15" id="chart-{{ r.symbol }}-15"></div>
+  <div class="d15wrap">
+    <button class="m1btn" onclick="toggleD15(this, '{{ r.symbol }}')">▲ Hide D1 + M15 charts</button>
+    <div class="d15box">
+    <div class="charts">
+      <div class="chart-d1" id="chart-{{ r.symbol }}-D"></div>
+      <div class="chart-m15" id="chart-{{ r.symbol }}-15"></div>
+    </div>
+    </div>
   </div>
   <div class="m1wrap">
     <button class="m1btn" onclick="toggleM1(this, '{{ r.symbol }}')">▼ Show M1 chart (full width)</button>
@@ -385,6 +390,16 @@ function toggleM1(btn, sym) {
     box.style.display = 'none';
     btn.textContent = '▼ Show M1 chart (full width)';
   }
+}
+
+// D1 + M15 charts: visible by default, collapsible on request (same toggle
+// pattern as M1, inverted default). Charts are already built, so this only
+// flips visibility; the widgets re-fit via autosize.
+function toggleD15(btn, sym) {
+  const box = btn.parentElement.querySelector('.d15box');
+  const show = box.style.display === 'none';
+  box.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? '▲ Hide D1 + M15 charts' : '▼ Show D1 + M15 charts';
 }
 </script>
 <script>

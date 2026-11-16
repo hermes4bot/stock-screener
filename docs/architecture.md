@@ -69,7 +69,9 @@ Reads newest `tv_gaps_*` history file. Charts via official
   (no saved-layout id — a layout-scoped base returns "Can't open this chart
   layout"; TV chart URLs do not apply `studies`, so indicators live only on
   the embedded widgets)
-Layout: D1 2fr + M15 1fr grid; M1 full-width behind lazy toggle.
+Layout: D1 2fr + M15 1fr grid (collapsible via toggleD15, visible by
+default); M1 full-width behind a lazy toggle (toggleM1). Both toggles only
+flip visibility — the widgets re-fit through `autosize`.
 Favorites in localStorage; batch bar visible only in Favorites view;
 all `window.open` calls synchronous inside click handlers.
 Routes: `/` = newest scan, `/<date>.html` = that day's report (same

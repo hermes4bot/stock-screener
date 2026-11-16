@@ -79,6 +79,12 @@ History accumulates forever — base for future gap-frequency stats and backtest
   (lazy-loaded)
 - **EMA(9) orange, SMA(20) blue** on the embedded on-page charts
   (official `TradingView.widget` API)
+- **📰 News summary** — clicking a ticker opens a 4th tab,
+  `/news/<SYMBOL>.html`: recent headlines (Yahoo Finance, Google News
+  fallback) plus a short AI digest. Also linked per stock in the header.
+  Disable the AI digest with `NEWS_LLM=0`; pick a model with
+  `NEWS_LLM_MODEL` (default `openrouter/free`). Feeds and digests are
+  cached 15 min under `data/news_cache/`.
 - Outbound TradingView links open a plain chart for that symbol/interval
   (`/chart/?symbol=X&interval=D`) with the same lookback ranges
   (D1 = 90 d, M15 = 10 d, M1 = 2 d). TradingView chart URLs no longer carry

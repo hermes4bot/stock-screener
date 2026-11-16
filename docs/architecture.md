@@ -75,7 +75,16 @@ flip visibility — the widgets re-fit through `autosize`.
 Favorites in localStorage; batch bar visible only in Favorites view;
 all `window.open` calls synchronous inside click handlers.
 Routes: `/` = newest scan, `/<date>.html` = that day's report (same
-interactive page), `/gaps.zip` = CSV + static HTML snapshot.
+interactive page), `/gaps.zip` = CSV + static HTML snapshot,
+`/news/<symbol>.html` = per-symbol news summary.
+
+News: Yahoo Finance RSS (`feeds.finance.yahoo.com/rss/2.0/headline?s=SYM`),
+Google News RSS as fallback; 12 latest items, HTML stripped, relative
+timestamps. A short AI digest is generated through OpenRouter
+(`NEWS_LLM_MODEL`, default `openrouter/free`; `NEWS_LLM=0` disables it) and
+cached next to the feed for `NEWS_TTL` (900 s) under `data/news_cache/`
+(gitignored). The offline ZIP snapshot links out to Yahoo's symbol news
+page instead of the local route.
 Also imported by `send_gaps_zip.py` (`flatten`, `prepare_rows`,
 `render_html`) — keep these APIs stable.
 

@@ -15,4 +15,5 @@ wheels/
 # Runtime caches (auto-regenerated)
 data/quotes_cache.json
 data/candles_cache.json
+data/news_cache/
 gaps_report.html

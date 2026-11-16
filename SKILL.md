@@ -27,6 +27,7 @@ This skill provides a Python-based stock gap screener that:
 - Quality-filters (PM volume >= 100K) and tiers (10/20/50%+)
 - Persists every scan to `data/history/tv_gaps_YYYY-MM-DD.json`
 - Delivers one ZIP (CSV + HTML) per trading day via `send_gaps_zip.py`
+- Serves a dashboard with a per-symbol news summary tab (`/news/<SYMBOL>.html`)
 
 ## Time Zone Reference (Berlin / CEST)
 
@@ -112,6 +113,8 @@ Gaps found in each group trigger real-time Telegram alerts.
 | `NEWS_TELEGRAM_BOT_TOKEN` | *(empty)* | News Group bot token (delivery) |
 | `NEWS_TELEGRAM_CHAT_ID` | *(empty)* | News Group chat ID (delivery) |
 | `GAP_TELEGRAM_BOT_TOKEN` / `GAP_TELEGRAM_CHAT_ID` | *(fallback to NEWS_*)* | Dedicated gap-alert identity (optional) |
+| `NEWS_LLM` | `1` | `0` skips the AI news digest (falls back to a compiled digest) |
+| `NEWS_LLM_MODEL` | `openrouter/free` | OpenRouter model used for the news digest |
 
 ## Rate Limiting
 

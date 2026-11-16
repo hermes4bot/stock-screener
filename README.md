@@ -12,6 +12,7 @@ Repo: <https://github.com/hermes4bot/stock-screener>
 | Mon–Fri 14:45 | system cron `run_stock_gaps.sh`: uv-sync → `tv_gaps.py 10 --save` (3× retry) → `send_gaps_zip.py` | 1 ZIP message; 1 ❌ only on failure |
 | Day 1–7 monthly 10:15 | Hermes job `update-ticker-lists`: `update_lists.py` refreshes Dow/S&P from Wikipedia | silent (`deliver: local`) |
 | Manual | `./run_webapp.sh [port]` dashboard on :8080 | — |
+| always-on | systemd user service `gap-webapp.service` on :12345 | `http://10.53.164.194:12345/` |
 
 ## Components
 
@@ -74,9 +75,15 @@ History accumulates forever — base for future gap-frequency stats and backtest
 ## Web frontend features
 
 - D1 chart at 2/3 width + M15 at 1/3; M1 full-width behind a toggle (lazy-loaded)
-- **EMA(9) orange, SMA(20) blue** on every chart and every TradingView link
-- Chart links open your TV layout with preloaded studies and lookback ranges
-  (D1 = 90 d, M15 = 10 d, M1 = 2 d)
+- **EMA(9) orange, SMA(20) blue** on the embedded on-page charts
+  (official `TradingView.widget` API)
+- Outbound TradingView links open a plain chart for that symbol/interval
+  (`/chart/?symbol=X&interval=D`) with the same lookback ranges
+  (D1 = 90 d, M15 = 10 d, M1 = 2 d). TradingView chart URLs no longer carry
+  studies, and the old saved-layout base (`/chart/0ZTktGqI/`) was deleted —
+  linking to it returned *"Can't open this chart layout"*.
+- History: `/<date>.html` (e.g. `/2026-11-12.html`) renders that day's report
+  with the full interactive page; `/` always shows the latest scan
 - Favorites: star per stock (localStorage), "Favorites only" filter;
   batch bar ("open next 10" / "open ALL") appears only in Favorites view
 - Pop-up blocker detection with fix instructions

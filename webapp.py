@@ -24,13 +24,26 @@ HISTORY_DIR = DATA_DIR / "history"
 
 app = Flask(__name__)
 
-TV_CHART_BASE = "https://www.tradingview.com/chart/0ZTktGqI/"
-# Chart-page links: studies as [[name, {inputs}], ...]
-# EMA(9) = orange, SMA(20) = blue
-STUDIES = (
-    "%5B%5B%22MAExp%40tv-basicstudies%22%2C%7B%22length%22%3A9%7D%5D"
-    "%2C%5B%22MASimple%40tv-basicstudies%22%2C%7B%22length%22%3A20%7D%5D"
+TV_CHART_BASE = "https://www.tradingview.com/chart/"
+# Chart-page links: studies as [{"name": ..., "id": ..., "inputs": {...}}, ...]
+# This is TradingView's own chart-URL serialization (captured from the chart
+# page itself). The old layout-scoped base (/chart/<id>/) is gone: that saved
+# layout was deleted and every link returned "Can't open this chart layout".
+STUDY_DEFS = (
+    ("MAExp@tv-basicstudies", 9),     # EMA(9)
+    ("MASimple@tv-basicstudies", 20),  # SMA(20)
 )
+
+
+def _studies_qs() -> str:
+    payload = [
+        {"name": sid, "id": sid, "inputs": {"length": length}}
+        for sid, length in STUDY_DEFS
+    ]
+    return quote(json.dumps(payload, separators=(",", ":")))
+
+
+STUDIES = _studies_qs()
 # Widget embeds: studies as [{"id": name, "inputs": {...}}, ...]
 # Correct IDs: MAExp (exponential MA) / MASimple (simple MA)
 WIDGET_STUDIES = "%5B%7B%22id%22%3A%22MAExp%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A9%7D%7D%2C%7B%22id%22%3A%22MASimple%40tv-basicstudies%22%2C%22inputs%22%3A%7B%22length%22%3A20%7D%7D%5D"
@@ -188,7 +201,7 @@ PAGE = """
 <div class="popupHelp" id="popupHelp" style="display:none">
   ⚠ <b><span id="blockedCount">0</span> tabs were blocked</b> by your browser.
   Click the pop-up blocker icon in the address bar →
-  <b>“Always allow pop-ups from 10.53.164.28”</b> (Chrome: also tick
+  <b>“Always allow pop-ups from 10.53.164.194”</b> (Chrome: also tick
   “allow multiple pop-ups”) → Done, then click again.
 </div>
 {% endif %}
@@ -244,7 +257,7 @@ PAGE = """
 const allSymbols = JSON.parse('{{ symbols_json|safe }}');
 
 function tfUrls(sym) {
-  const base = "https://www.tradingview.com/chart/0ZTktGqI/";
+  const base = "https://www.tradingview.com/chart/";
   const studies = "{{ studies|safe }}";
   const now = Math.floor(Date.now() / 1000);
   const day = 86400;
@@ -483,6 +496,17 @@ def render_html(record, static_snapshot=False):
         static_snapshot=static_snapshot,
     )
 
+
+@app.route("/<date_str>.html")
+def history_page(date_str):
+    """Render historical scan report from the gaps history folder."""
+    # Ensure it's safe and exists
+    f = HISTORY_DIR / f"tv_gaps_{date_str}.json"
+    if not f.exists():
+        abort(404, f"No report found for {date_str}")
+    
+    data = json.loads(f.read_text())
+    return render_html(data, static_snapshot=False)
 
 @app.route("/")
 def index():

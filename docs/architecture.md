@@ -12,14 +12,18 @@ MONTHLY (Hermes job `update-ticker-lists`, 15 10 1-7 * *)
 WEEKDAYS 14:45 Berlin (system cron `run_stock_gaps.sh`, flock-guarded)
   1. uv sync --frozen            # venv always matches uv.lock, warn-and-continue
   2. tv_gaps.py 10 --save        # ONE TradingView scanner call (3x retry, 60s)
-     quality filter PM vol >= 10K, tiers 10/20/50%
+     quality filter PM vol >= 100K, tiers 10/20/50%
      --> data/history/tv_gaps_YYYY-MM-DD.json
   3. send_gaps_zip.py            # CSV + full HTML (via webapp.render_html)
      --> News Group: ONE message (gaps.zip + caption + source footer)
   Failures (scan x3, missing dir, ZIP fail) --> ONE ❌ message each, exit 1
 
+ALWAYS ON
+  gap-webapp.service (systemd --user, port 12345, Restart=always)
+    reads newest history JSON, serves / and /<date>.html
+
 ON DEMAND
-  webapp.py (:8080, run_webapp.sh) reads newest history JSON, serves charts.
+  webapp.py (:8080, run_webapp.sh) same app on another port.
 ```
 
 ## Schedules (all times Berlin)
@@ -28,7 +32,8 @@ ON DEMAND
 |---|---|---|---|
 | Gap scan + ZIP | Mon–Fri 14:45 | system cron `run_stock_gaps.sh` | 1 ZIP msg; 1 ❌ msg only on failure |
 | Ticker refresh | day 1–7 monthly, 10:15 | Hermes job `update-ticker-lists` | none (`deliver: local`) |
-| Dashboard | manual | `./run_webapp.sh [port]` | none |
+| Dashboard (always on) | continuous | systemd `gap-webapp.service` | none |
+| Dashboard (manual) | on demand | `./run_webapp.sh [port]` | none |
 
 ## Components (live)
 
@@ -36,7 +41,7 @@ ON DEMAND
 POST to `scanner.tradingview.com/america/scan` (gap-ups + gap-downs),
 columns include PM volume, market cap, sector. No API key, no ticker list
 needed — the scanner returns everything. Quality filter: pre-market volume
-≥ 10,000. Tier = highest boundary from `[10, 20, 50]`.
+≥ 100,000. Tier = highest boundary from `[10, 20, 50]`.
 Sends its own Telegram summary ONLY without `--save`; under `--save` the
 ZIP step owns delivery (one-message rule).
 
@@ -60,9 +65,15 @@ Reads newest `tv_gaps_*` history file. Charts via official
   (`"moving average exponential.ma.color"` = EMA orange,
   `"moving average.ma.color"` = SMA blue; object-form styles fail silently)
 - lookback via from/to: D1 90 d, M15 10 d, M1 2 d
+- outbound chart links: `https://www.tradingview.com/chart/?symbol=X&interval=<D|15|1>`
+  (no saved-layout id — a layout-scoped base returns "Can't open this chart
+  layout"; TV chart URLs do not apply `studies`, so indicators live only on
+  the embedded widgets)
 Layout: D1 2fr + M15 1fr grid; M1 full-width behind lazy toggle.
 Favorites in localStorage; batch bar visible only in Favorites view;
 all `window.open` calls synchronous inside click handlers.
+Routes: `/` = newest scan, `/<date>.html` = that day's report (same
+interactive page), `/gaps.zip` = CSV + static HTML snapshot.
 Also imported by `send_gaps_zip.py` (`flatten`, `prepare_rows`,
 `render_html`) — keep these APIs stable.
 

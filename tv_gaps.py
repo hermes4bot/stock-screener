@@ -57,7 +57,7 @@ def _env_int(name, default):
         return default
 
 
-MIN_VOLUME = _env_int("GAP_MIN_VOL", 10_000)
+MIN_VOLUME = _env_int("GAP_MIN_VOL", 100_000)
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"

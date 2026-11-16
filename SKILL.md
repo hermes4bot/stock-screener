@@ -24,7 +24,7 @@ metadata:
 
 This skill provides a Python-based stock gap screener that:
 - Fetches ALL US pre-market gaps in ONE TradingView scanner call (no key)
-- Quality-filters (PM volume >= 10K) and tiers (10/20/50%+)
+- Quality-filters (PM volume >= 100K) and tiers (10/20/50%+)
 - Persists every scan to `data/history/tv_gaps_YYYY-MM-DD.json`
 - Delivers one ZIP (CSV + HTML) per trading day via `send_gaps_zip.py`
 
@@ -94,7 +94,7 @@ unused — see `archive/`.
 ## Scan Priority
 
 Not applicable to the TV path (single call returns everything, filtered by
-PM volume ≥ 10K and tiers 10/20/50). The group-priority scheme below applied
+PM volume ≥ 100K and tiers 10/20/50). The group-priority scheme below applied
 only to the retired Finnhub scanner and is kept for reference:
 
 When scanning the full US market, stocks are prioritized by gap likelihood:
@@ -134,5 +134,6 @@ chart studies instead — no data fetching needed.
 | `archive/scan_gaps.py` | Retired Finnhub fallback (archived 2026-09-14) |
 | `update_lists.py` | Monthly ticker list updater (Wikipedia) |
 | `run_webapp.sh` | Manual dashboard launcher (:8080) |
+| `gap-webapp.service` | Always-on systemd user service, port 12345 (`http://10.53.164.194:12345/`) |
 | `archive/run_screener.sh` | Retired manual wrapper (pointed at archived scanner) |
 | `.env.example` | Environment variable template |

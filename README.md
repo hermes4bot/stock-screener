@@ -18,7 +18,7 @@ Repo: <https://github.com/hermes4bot/stock-screener>
 
 | File | What it does |
 |---|---|
-| `tv_gaps.py` | **Primary gap screener** — one TradingView scanner API call returns ALL US stocks with pre-market gaps (gap %, PM volume, market cap, sector). Quality filter drops illiquid names. |
+| `tv_gaps.py` | **Primary gap screener** — one TradingView scanner API call returns ALL US stocks with pre-market gaps (gap %, PM volume, market cap, sector), already filtered to PM volume ≥ 200k and PM price ≥ $1. Quality filter drops illiquid and penny names. |
 | `archive/scan_gaps.py` | Retired Finnhub fallback (archived 2026-09-14; kept for reference if the TV endpoint dies). |
 | `webapp.py` | Web frontend: big D1+M15 charts side by side, M1 on demand, favorites, batch TradingView tab openers. |
 | `archive/news_bot.py` | Retired market news digest (archived 2026-09-14; no scheduler references it). |
@@ -45,11 +45,19 @@ cp .env.example .env        # TELEGRAM_* / NEWS_* optional; no API key needed fo
 # Retired (see archive/): news_bot.py, scan_gaps.py (needs finnhub+pandas re-added)
 ```
 
-## Gap tiers
+## Gap tiers and quality filter
 
 Gaps are recorded from **10 %** up and classified into tiers (`10%+`,
 `20%+`, `50%+`). Output is sorted by tier, then size.
-Config: `GAP_THRESHOLD` env var; tier list in the scripts.
+
+The quality filter runs twice — in the TradingView scanner request itself and
+again in `quality_filter()` — and keeps only stocks that pass all of:
+
+| Filter | Default | Env var |
+|---|---|---|
+| Pre-market volume ≥ | 200,000 | `GAP_MIN_VOL` |
+| Pre-market price ≥ | $1.00 (drops penny stocks) | `GAP_MIN_PRICE` |
+| Gap tiers | 10 / 20 / 50 % | `GAP_TIERS` |
 
 ## Scheduling (actual automation)
 

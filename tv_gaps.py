@@ -14,7 +14,8 @@ Usage:
 
 Environment:
   TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID - optional delivery
-  GAP_MIN_VOL - min pre-market volume filter (default 10000)
+  GAP_MIN_VOL - min pre-market volume filter (default 200000)
+  GAP_MIN_PRICE - min pre-market price filter, drops penny stocks (default 1.0)
   GAP_TIERS - comma-separated tier ladder, e.g. "10,20,50" (default same)
 """
 
@@ -57,7 +58,18 @@ def _env_int(name, default):
         return default
 
 
-MIN_VOLUME = _env_int("GAP_MIN_VOL", 100_000)
+def _env_float(name, default):
+    raw = os.environ.get(name)
+    if raw is None or not str(raw).strip():
+        return float(default)
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return float(default)
+
+
+MIN_VOLUME = _env_int("GAP_MIN_VOL", 200_000)
+MIN_PRICE = _env_float("GAP_MIN_PRICE", 1.0)
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -76,13 +88,16 @@ log = logging.getLogger("tv-gaps")
 # TradingView scanner API
 # ---------------------------------------------------------------------------
 
-def scan_tv_premarket_gaps(min_gap: float) -> list[dict]:
-    """Query TradingView scanner for US stocks with |pre-market gap| >= min_gap.
-    Returns list sorted by |gap| descending.
+def _scanner_payload(min_gap: float) -> dict:
+    """Build the TradingView scanner request. Volume and price floors are
+    applied server-side as well as in quality_filter(), so the returned rows
+    already satisfy the filter.
     """
-    payload = {
+    return {
         "filter": [
             {"left": "premarket_gap", "operation": "in_range", "right": [min_gap, 100000]},
+            {"left": "premarket_volume", "operation": "greater", "right": MIN_VOLUME},
+            {"left": "premarket_close", "operation": "greater", "right": MIN_PRICE},
         ],
         "options": {"lang": "en"},
         "markets": ["america"],
@@ -100,6 +115,14 @@ def scan_tv_premarket_gaps(min_gap: float) -> list[dict]:
         "sort": {"sortBy": "premarket_gap", "sortOrder": "desc"},
         "range": [0, 150],
     }
+
+
+def scan_tv_premarket_gaps(min_gap: float) -> list[dict]:
+    """Query TradingView scanner for US stocks with |pre-market gap| >= min_gap
+    that already pass the volume and price floors.
+    Returns list sorted by |gap| descending.
+    """
+    payload = _scanner_payload(min_gap)
 
     resp = requests.post(TV_SCANNER_URL, json=payload, timeout=30)
     resp.raise_for_status()
@@ -121,6 +144,7 @@ def scan_tv_premarket_gaps(min_gap: float) -> list[dict]:
         })
 
     # Also fetch gap-downs
+    payload = _scanner_payload(min_gap)
     payload["filter"][0]["right"] = [-100000, -min_gap]
     payload["sort"]["sortOrder"] = "asc"
     resp = requests.post(TV_SCANNER_URL, json=payload, timeout=30)
@@ -164,11 +188,14 @@ def classify_tier(gap_pct: float) -> str:
 # Filtering & reporting
 # ---------------------------------------------------------------------------
 
-def quality_filter(rows: list[dict], min_volume: int = 10_000, min_mcap: float = 0) -> list[dict]:
-    """Filter out illiquid junk: no pre-market volume, tiny caps."""
+def quality_filter(rows: list[dict], min_volume: int = MIN_VOLUME,
+                   min_price: float = MIN_PRICE, min_mcap: float = 0) -> list[dict]:
+    """Filter out illiquid junk: no pre-market volume, penny stocks, tiny caps."""
     out = []
     for r in rows:
         if (r.get("premarket_volume") or 0) < min_volume:
+            continue
+        if (r.get("premarket_price") or 0) < min_price:
             continue
         if min_mcap and (r.get("market_cap") or 0) < min_mcap:
             continue
@@ -287,8 +314,11 @@ def main():
 
     log.info(f"Raw results: {len(rows)} stocks with gaps >= {MIN_GAP_PCT}%")
 
-    quality = quality_filter(rows, min_volume=MIN_VOLUME)
-    log.info(f"After quality filter (PM volume >= 10K): {len(quality)} stocks")
+    quality = quality_filter(rows, min_volume=MIN_VOLUME, min_price=MIN_PRICE)
+    log.info(
+        f"After quality filter (PM volume >= {MIN_VOLUME:,}, "
+        f"PM price >= ${MIN_PRICE:.2f}): {len(quality)} stocks"
+    )
 
     # Attach tier labels so saved history carries them too
     for r in quality:

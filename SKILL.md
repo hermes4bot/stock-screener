@@ -24,7 +24,7 @@ metadata:
 
 This skill provides a Python-based stock gap screener that:
 - Fetches ALL US pre-market gaps in ONE TradingView scanner call (no key)
-- Quality-filters (PM volume >= 100K) and tiers (10/20/50%+)
+- Quality-filters (PM volume >= 200K, PM price >= $1) and tiers (10/20/50%+)
 - Persists every scan to `data/history/tv_gaps_YYYY-MM-DD.json`
 - Delivers one ZIP (CSV + HTML) per trading day via `send_gaps_zip.py`
 - Serves a dashboard with a per-symbol news summary tab (`/news/<SYMBOL>.html`)
@@ -95,7 +95,8 @@ unused — see `archive/`.
 ## Scan Priority
 
 Not applicable to the TV path (single call returns everything, filtered by
-PM volume ≥ 100K and tiers 10/20/50). The group-priority scheme below applied
+PM volume >= 200K, PM price >= $1, tiers 10/20/50). The group-priority scheme
+below applied
 only to the retired Finnhub scanner and is kept for reference:
 
 When scanning the full US market, stocks are prioritized by gap likelihood:
@@ -113,6 +114,9 @@ Gaps found in each group trigger real-time Telegram alerts.
 | `NEWS_TELEGRAM_BOT_TOKEN` | *(empty)* | News Group bot token (delivery) |
 | `NEWS_TELEGRAM_CHAT_ID` | *(empty)* | News Group chat ID (delivery) |
 | `GAP_TELEGRAM_BOT_TOKEN` / `GAP_TELEGRAM_CHAT_ID` | *(fallback to NEWS_*)* | Dedicated gap-alert identity (optional) |
+| `GAP_MIN_VOL` | `200000` | Minimum pre-market volume (scanner + quality filter) |
+| `GAP_MIN_PRICE` | `1.0` | Minimum pre-market price; drops penny stocks |
+| `GAP_TIERS` | `10,20,50` | Comma-separated tier ladder (%) |
 | `NEWS_LLM` | `1` | `0` skips the AI news digest (falls back to a compiled digest) |
 | `NEWS_LLM_MODEL` | `openrouter/free` | OpenRouter model used for the news digest |
 

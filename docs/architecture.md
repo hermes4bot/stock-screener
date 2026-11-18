@@ -12,7 +12,8 @@ MONTHLY (Hermes job `update-ticker-lists`, 15 10 1-7 * *)
 WEEKDAYS 14:45 Berlin (system cron `run_stock_gaps.sh`, flock-guarded)
   1. uv sync --frozen            # venv always matches uv.lock, warn-and-continue
   2. tv_gaps.py 10 --save        # ONE TradingView scanner call (3x retry, 60s)
-     quality filter PM vol >= 100K, tiers 10/20/50%
+     scanner filter + quality filter: PM vol >= 200K, PM price >= $1,
+     tiers 10/20/50%
      --> data/history/tv_gaps_YYYY-MM-DD.json
   3. send_gaps_zip.py            # CSV + full HTML (via webapp.render_html)
      --> News Group: ONE message (gaps.zip + caption + source footer)
@@ -40,8 +41,10 @@ ON DEMAND
 ### `tv_gaps.py` — the only scanner
 POST to `scanner.tradingview.com/america/scan` (gap-ups + gap-downs),
 columns include PM volume, market cap, sector. No API key, no ticker list
-needed — the scanner returns everything. Quality filter: pre-market volume
-≥ 100,000. Tier = highest boundary from `[10, 20, 50]`.
+needed — the scanner returns everything. Filters (applied in the scanner
+request AND in `quality_filter()`): pre-market volume >= 200,000
+(`GAP_MIN_VOL`), pre-market price >= $1.00 (`GAP_MIN_PRICE`, drops penny
+stocks), tier = highest boundary from `[10, 20, 50]`.
 Sends its own Telegram summary ONLY without `--save`; under `--save` the
 ZIP step owns delivery (one-message rule).
 
